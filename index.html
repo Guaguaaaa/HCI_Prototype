@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Experiment Consent</title>
-    <!-- Favicon -->
+    <title>{{ strings.title }}</title>
     <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
     <link rel="shortcut icon" href="/assets/favicon.ico" />
@@ -13,9 +12,7 @@
     <link rel="manifest" href="/assets/site.webmanifest" />
 
     <style>
-        /* --- CSS Styles --- */
-
-        /* Basic page reset and font settings */
+        /* --- CSS Styles (Unchanged) --- */
         body, html {
             margin: 0;
             padding: 0;
@@ -144,45 +141,44 @@
 
 <div class="main-container">
     <div class="consent-section">
-        <h1>Research Experiment: Informed Consent Confirmation</h1>
+        <h1>{{ strings.title }}</h1>
 
-        <!-- PDF Confirmation -->
         <div class="pdf-check">
-            <strong>IMPORTANT:</strong> Please ensure you have read and signed the complete <strong>Informed Consent Form (ICF) PDF</strong> provided by the experimenter before proceeding.
+            <strong>IMPORTANT:</strong> {{ strings.pdf_important | safe }}
         </div>
 
         <div class="consent-text">
-            <h3>Study Summary & Procedure</h3>
-            <p>You are now confirming your participation in a study regarding <strong>AI explainability and its effect on user perception</strong>. Your total estimated experiment time is <strong>15–20 minutes</strong>.</p>
-            <p>The core steps involve: <strong>Questionnaires &rarr; A short dialogue with an AI Agent &rarr; Post-experiment Questionnaires.</strong></p>
+            <h3>{{ strings.title_h3 }}</h3>
+            <p>{{ strings.procedure_summary | safe }}</p>
+            <p>{{ strings.procedure_steps | safe }}</p>
 
-            <h3>Key Rights Summary</h3>
+            <h3>{{ strings.rights_title }}</h3>
             <ul>
-                <li><strong>Voluntary Participation & Withdrawal:</strong> You are participating voluntarily and may exit the study at any time without penalty. If you withdraw, your collected data will be deleted.</li>
-                <li><strong>Anonymity:</strong> All your dialogue metrics and questionnaire responses are anonymous and are used only for academic research.</li>
-                <li><strong>Important Disclaimer:</strong> The AI Agent is <strong>not a professional</strong>. It does not provide medical or psychological support. If you experience discomfort, please stop immediately and contact the experimenter at <strong>hi@peterguan.com</strong>.</li>
+                <li>{{ strings.voluntary_withdrawal | safe }}</li>
+                <li>{{ strings.anonymity | safe }}</li>
+                <li>{{ strings.disclaimer | safe }}</li>
             </ul>
 
-            <h3>Data Confidentiality</h3>
-            <p>Your privacy is protected. All data will be anonymized using a unique Participant ID and stored securely. No raw conversation text is retained.</p>
+            <h3>{{ strings.confidentiality_title }}</h3>
+            <p>{{ strings.confidentiality_text }}</p>
 
         </div>
 
         <div class="checkbox-group">
             <input type="checkbox" id="consent-checkbox">
             <label for="consent-checkbox">
-                I have read and understood the summary above, and I confirm I consent to continue with this study.
+                {{ strings.checkbox_label }}
             </label>
         </div>
 
-        <button id="consent-btn" class="btn-consent" disabled>I Agree and Continue</button>
+        <button id="consent-btn" class="btn-consent" disabled>{{ strings.button_text }}</button>
         <p id="error-message" class="error-message" style="display: none;"></p>
         <p id="pid-display">Participant ID: Loading...</p>
     </div>
 </div>
 
 <script>
-    const CONSENT_STEP_INDEX = 0; // The index for the next step, Demographics, is 0 in EXPERIMENT_STEPS
+    const CONSENT_STEP_INDEX = 0;
     const CONSENT_STEP_NAME = "CONSENT_AGREEMENT";
 
     const consentButton = document.getElementById('consent-btn');
@@ -192,6 +188,12 @@
 
     let participantId = null;
 
+    // --- JS Localization Fix ---
+    // Extract localized strings into JS variables
+    const ERROR_PID_MISSING = '{{ strings.error_pid_missing }}';
+    const ERROR_CHECKBOX = '{{ strings.checkbox_error }}';
+    const LOADING_TEXT = '{{ strings.saving_data }}'.replace('Saving Data', 'Saving Consent');
+
     // --- Initialization and PID Check ---
     function initializePage() {
         const urlParams = new URLSearchParams(window.location.search);
@@ -199,7 +201,7 @@
 
         if (!participantId) {
             // If no PID, redirect to Admin Setup
-            pidDisplay.textContent = "Error: Participant ID missing. Redirecting to setup...";
+            pidDisplay.textContent = ERROR_PID_MISSING.replace('Please start over.', 'Redirecting to setup...');
             pidDisplay.style.color = 'red';
             setTimeout(() => {
                 window.location.href = '/html/admin_setup.html';
@@ -221,20 +223,20 @@
         event.preventDefault();
 
         if (!participantId) {
-            errorMessage.textContent = "Error: Session not initialized. Please restart from Admin Setup.";
+            errorMessage.textContent = ERROR_PID_MISSING.replace('Please start over.', 'Session not initialized. Please restart from Admin Setup.');
             errorMessage.style.display = 'block';
             return;
         }
 
         if (!consentCheckbox.checked) {
-            errorMessage.textContent = "Please check the box to confirm your consent.";
+            errorMessage.textContent = ERROR_CHECKBOX;
             errorMessage.style.display = 'block';
             return;
         }
 
         // Disable button and show loading state
         consentButton.disabled = true;
-        consentButton.textContent = 'Saving Consent and Continuing...';
+        consentButton.textContent = LOADING_TEXT;
         errorMessage.style.display = 'none';
 
         // 1. Call backend route to record user consent data
@@ -257,7 +259,9 @@
                 // 2. Redirect to the next page (Demographics)
                 window.location.href = data.next_url;
             } else {
-                throw new Error(data.error || 'Unknown error during consent save.');
+                // Fallback to localized error message
+                const errorText = data.error || '{{ strings.error_unknown_data_save }}';
+                throw new Error(errorText);
             }
         })
         .catch(error => {
@@ -265,7 +269,7 @@
             errorMessage.textContent = `Error: ${error.message}`;
             errorMessage.style.display = 'block';
             consentButton.disabled = false;
-            consentButton.textContent = 'I Agree and Continue';
+            consentButton.textContent = '{{ strings.button_text }}';
         });
     });
 

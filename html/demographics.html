@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Demographics</title>
+    <title>{{ strings.title }}</title>
     <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
     <link rel="manifest" href="/assets/site.webmanifest" />
 
@@ -166,40 +166,40 @@
 
 <div class="main-container">
     <div class="form-section">
-        <h1>Demographics Survey</h1>
-        <p>Please provide the following basic information about yourself. Your answers will be kept confidential and used only for statistical analysis.</p>
+        <h1>{{ strings.title }}</h1>
+        <p>{{ strings.intro }}</p>
 
         <form id="demographics-form">
             <div class="form-group">
-                <label for="age">1. Age (in years):</label>
+                <label for="age">{{ strings.q1_age }}</label>
                 <input type="number" id="age" name="age" required min="18" max="100">
             </div>
 
             <div class="form-group">
-                <label>2. Gender:</label>
+                <label>{{ strings.q2_gender }}</label>
                 <div class="radio-group">
-                    <div><input type="radio" id="female" name="gender" value="Female" required><label for="female">Female</label></div>
-                    <div><input type="radio" id="male" name="gender" value="Male"><label for="male">Male</label></div>
-                    <div><input type="radio" id="nonbinary" name="gender" value="Non-binary/Other"><label for="nonbinary">Non-binary/Other</label></div>
-                    <div><input type="radio" id="prefer_not_to_say_gender" name="gender" value="Prefer not to say"><label for="prefer_not_to_say_gender">Prefer not to say</label></div>
+                    <div><input type="radio" id="female" name="gender" value="Female" required><label for="female">{{ strings.q2_female }}</label></div>
+                    <div><input type="radio" id="male" name="gender" value="Male"><label for="male">{{ strings.q2_male }}</label></div>
+                    <div><input type="radio" id="nonbinary" name="gender" value="Non-binary/Other"><label for="nonbinary">{{ strings.q2_nonbinary }}</label></div>
+                    <div><input type="radio" id="prefer_not_to_say_gender" name="gender" value="Prefer not to say"><label for="prefer_not_to_say_gender">{{ strings.q2_prefer_not }}</label></div>
                 </div>
             </div>
 
             <div class="form-group">
-                <label for="education">3. Highest Level of Education Completed:</label>
+                <label for="education">{{ strings.q3_education }}</label>
                 <select id="education" name="education" required>
-                    <option value="" disabled selected>Select an option</option>
-                    <option value="High School">High School Diploma or equivalent</option>
-                    <option value="Associate">Associate's Degree</option>
-                    <option value="Bachelor">Bachelor's Degree</option>
-                    <option value="Master">Master's Degree</option>
-                    <option value="Doctorate">Doctorate or Professional Degree</option>
-                    <option value="Other">Other</option>
+                    <option value="" disabled selected>{{ strings.q3_select }}</option>
+                    <option value="High School">{{ strings.q3_high_school }}</option>
+                    <option value="Associate">{{ strings.q3_associate }}</option>
+                    <option value="Bachelor">{{ strings.q3_bachelor }}</option>
+                    <option value="Master">{{ strings.q3_master }}</option>
+                    <option value="Doctorate">{{ strings.q3_doctorate }}</option>
+                    <option value="Other">{{ strings.q3_other }}</option>
                 </select>
             </div>
 
             <div class="form-group">
-                <label for="chatbot_frequency" class="question-label">4. How often do you typically use chatbots (e.g., Siri, ChatGPT, Gemini, emotional support bots)?</label>
+                <label for="chatbot_frequency" class="question-label">{{ strings.q4_frequency }}</label>
 
                 <div class="likert-scale">
                     <div class="likert-option">
@@ -233,22 +233,22 @@
                 </div>
 
                 <div class="likert-labels">
-                    <span style="flex: 1; text-align: left;">1 (Never)</span>
-                    <span style="flex: 1; text-align: right;">7 (Very Often)</span>
+                    <span style="flex: 1; text-align: left;">{{ strings.q4_never }}</span>
+                    <span style="flex: 1; text-align: right;">{{ strings.q4_often }}</span>
                 </div>
             </div>
 
             <div class="form-group">
-                <label>5. Have you ever received psychological counseling or been diagnosed with a mental health issue?</label>
+                <label>{{ strings.q5_mental_health }}</label>
                 <div class="radio-group">
-                    <div><input type="radio" id="mh_yes" name="mental_health_history" value="Yes" required><label for="mh_yes">Yes</label></div>
-                    <div><input type="radio" id="mh_no" name="mental_health_history" value="No"><label for="mh_no">No</label></div>
-                    <div><input type="radio" id="mh_prefer_not" name="mental_health_history" value="Prefer not to say"><label for="mh_prefer_not">Prefer not to say</label></div>
+                    <div><input type="radio" id="mh_yes" name="mental_health_history" value="Yes" required><label for="mh_yes">{{ strings.q5_yes }}</label></div>
+                    <div><input type="radio" id="mh_no" name="mental_health_history" value="No"><label for="mh_no">{{ strings.q5_no }}</label></div>
+                    <div><input type="radio" id="mh_prefer_not" name="mental_health_history" value="Prefer not to say"><label for="mh_prefer_not">{{ strings.q2_prefer_not }}</label></div>
                 </div>
             </div>
 
 
-            <button type="submit" id="submit-btn" class="btn-submit">Continue to Next Step</button>
+            <button type="submit" id="submit-btn" class="btn-submit">{{ strings.continue_to_next }}</button>
             <p id="error-message" class="error-message" style="display: none;"></p>
         </form>
     </div>
@@ -309,12 +309,13 @@
         });
 
         if (!isFormValid) {
-            errorMessage.textContent = "Please fill in all required fields.";
+            errorMessage.textContent = '{{ strings.error_fill_all }}';
             errorMessage.style.display = 'block';
             return;
         }
 
         submitButton.disabled = true;
+        // JS strings that need manual localization if required
         submitButton.textContent = 'Saving Data...';
         errorMessage.style.display = 'none';
 

@@ -29,6 +29,14 @@ def get_participant_condition(participant_id: str) -> str:
     return status.get("condition", "UNKNOWN")  # Default to UNKNOWN if not set
 
 
+# 获取受试者的语言
+def get_participant_language(participant_id: str) -> str:
+    """获取受试者的实验语言 (en/zh-CN)"""
+    status = get_participant_status(participant_id)
+    # 默认语言为英文，以防万一
+    return status.get("language", "en")
+
+
 def save_participant_data(participant_id: str, step_name: str, data: dict):
     """
     通用数据保存函数：将一个步骤数据（如问卷、初始化）以 JSON Line 格式追加写入。
@@ -57,7 +65,7 @@ def save_participant_data(participant_id: str, step_name: str, data: dict):
         return False
 
 
-def init_participant_session(participant_id: str, condition: str):
+def init_participant_session(participant_id: str, condition: str, language: str):
     """
     初始化受试者会话，保存实验条件和开始时间。
     返回下一个页面的 URL (人口统计页面)。
@@ -68,6 +76,7 @@ def init_participant_session(participant_id: str, condition: str):
     # 1. 保存初始化数据 (将条件和开始时间作为第一个记录)
     init_data = {
         "condition": condition.upper(),
+        "language": language,
         "start_time": time.time(),
         "version_url": VERSION_MAP[condition.upper()]
     }
@@ -78,7 +87,7 @@ def init_participant_session(participant_id: str, condition: str):
     with open(status_path, 'w', encoding='utf-8') as f:
         json.dump(init_data, f, ensure_ascii=False, indent=4)
 
-    print(f"🎉 Session initialized for PID {participant_id} in {condition} condition.")
+    print(f"🎉 Session initialized for PID {participant_id} in {condition} condition. Language: {language}")
 
     # 返回下一步的 URL (人口统计页面)
     return "/html/demographics.html"

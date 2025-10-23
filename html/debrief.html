@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Experiment Debriefing</title>
+    <title>{{ strings.title }}</title>
     <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
     <link rel="manifest" href="/assets/site.webmanifest" />
 
@@ -91,36 +91,33 @@
 
 <div class="main-container">
     <div class="debrief-section">
-        <h1>Experiment Completed!</h1>
+        <h1>{{ strings.title }}</h1>
 
-        <p>Thank you very much for your time and thoughtful participation in this research study. Your contribution is highly valuable to our work in Human-Computer Interaction (HCI).</p>
+        <p>{{ strings.thank_you }}</p>
 
-        <h2>Study Purpose Revealed</h2>
-      <p>The primary purpose of this study was to compare <strong>how providing (or not providing) AI-generated explanations</strong> for its emotion judgments affects users' <strong>trust and perceived empathy</strong> in an emotional support conversational agent.</p>
-      <p>You were randomly assigned to either the <strong>XAI condition</strong> (with explanations) or the <strong>Non-XAI condition</strong> (without explanations). Your feedback helps us determine if transparency improves the user experience with AI support systems.</p>
+        <h2>{{ strings.purpose_title }}</h2>
+        <p>{{ strings.purpose_1 | safe }}</p>
+        <p>{{ strings.purpose_2 | safe }}</p>
 
-        <h2>Mental Health Safety Resources</h2>
+        <h2>{{ strings.safety_title }}</h2>
         <div class="safety-box">
-            <h3>⚠️ Important: If You Experienced Distress</h3>
-            <p>If the emotional conversation task caused you any discomfort or distress, please remember that the AI Agent is not a substitute for a professional therapist.</p>
-            <p>Please contact the following resources immediately:</p>
-            <ul>
-                <li><strong>Los Angeles Crisis Hotline:</strong> (800) 854-7771</li>
-                <li><strong>Crisis Text Line:</strong> Text "LA" to 741741</li>
-                <li><strong>Researcher Contact:</strong> If you feel uncomfortable or have lasting concerns, please contact the experimenter: hi@peterguan.com</li>
-            </ul>
+            <h3>{{ strings.safety_warning_h3 | safe }}</h3>
+            <p>{{ strings.safety_warning_p1 }}</p>
+            <p><strong>{{ strings.safety_contact_1 }}</strong> (800) 854-7771</p>
+            <p><strong>{{ strings.safety_contact_2 }}</strong> Text "LA" to 741741</p>
+            <p><strong>{{ strings.safety_contact_3 }}</strong> hi@peterguan.com</p>
         </div>
 
-        <h2>Research Results & Contact</h2>
+        <h2>{{ strings.results_title }}</h2>
         <div class="contact-info">
-            <p>The data from this study is saved anonymously and securely.</p>
+            <p>{{ strings.results_p1 }}</p>
             <ul>
-              <li><strong>Questions or Concerns:</strong> Please contact the principal researcher at: <strong>hi@peterguan.com</strong></li>
-                <li><strong>Receive Results:</strong> If you would like to receive a summary of the research findings once the study is completed, please send an email to the researcher with the subject line: "Request Research Results."</li>
+              <li><strong>{{ strings.contact_p1 }}</strong> hi@peterguan.com</li>
+                <li><strong>{{ strings.contact_p2 }}</strong></li>
             </ul>
         </div>
 
-      <p style="text-align: center; margin-top: 50px; font-size: 1.1rem; color: #333;"><strong>You have completed all steps of the experiment.</strong> You may now close this browser window.</p>
+      <p style="text-align: center; margin-top: 50px; font-size: 1.1rem; color: #333;"><strong>{{ strings.end_message }}</strong><br>{{ strings.end_message_sub }}</p>
     </div>
 </div>
 

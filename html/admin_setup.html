@@ -84,6 +84,14 @@
                 <option value="NON_XAI">Non-XAI Version</option>
             </select>
         </div>
+        <div class="input-group">
+            <label for="language">Experiment Language:</label>
+            <select id="language" required>
+                <option value="" disabled selected>Select Language</option>
+                <option value="en">English (英文)</option>
+                <option value="zh-CN">Chinese (简体中文)</option>
+            </select>
+        </div>
         <button type="submit" id="start-btn">Start Experiment & Go to Consent</button>
         <p id="error-message" class="error-message" style="display: none;"></p>
     </form>
@@ -94,15 +102,19 @@
     const startButton = document.getElementById('start-btn');
     const participantIdInput = document.getElementById('participant_id');
     const conditionSelect = document.getElementById('condition');
+    const languageSelect = document.getElementById('language');
     const errorMessage = document.getElementById('error-message');
+
+
 
     form.addEventListener('submit', function(event) {
         event.preventDefault();
 
         const participantId = participantIdInput.value.trim();
         const condition = conditionSelect.value;
+        const language = languageSelect.value;
 
-        if (!participantId || !condition) {
+        if (!participantId || !condition || !language) {
             errorMessage.textContent = "Error: Please provide a valid Participant ID and select a Condition.";
             errorMessage.style.display = 'block';
             return;
@@ -118,7 +130,8 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 participant_id: participantId,
-                condition: condition
+                condition: condition,
+                language: language,
             })
         })
         .then(response => response.json())

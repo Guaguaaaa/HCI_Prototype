@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, Response, send_from_directory
+from flask import Flask, request, jsonify, Response, send_from_directory, render_template_string
 from flask_cors import CORS
 import os
 import json
@@ -9,6 +9,7 @@ import csv
 from backend import llm_service
 from backend import data_manager
 from backend.config import VERSION_MAP, EXPERIMENT_STEPS, INSTRUCTION_VERSION_MAP
+from backend.localization import get_localization_for_page
 
 # --- Flask App Setup ---
 project_root = os.path.dirname(os.path.abspath(__file__))
@@ -35,6 +36,37 @@ def calculate_text_metrics(text: str) -> dict:
     }
 
 
+# --- Jinja2 渲染辅助函数 ---
+def render_template_page(template_file_name: str, module_name: str, participant_id: str):
+    """
+    根据受试者ID从状态中获取语言，然后用正确的本地化文本渲染 HTML 模板。
+    """
+    # 1. 获取语言 (如果 PID 未初始化，会返回默认 'en')
+    language = data_manager.get_participant_language(participant_id)
+
+    print(f"DEBUG: Rendering {template_file_name} for PID {participant_id} in language: {language}")
+
+    # 2. 获取本地化文本字典
+    strings = get_localization_for_page(module_name, language)
+
+    # 3. 读取 HTML 文件内容 (FIX: 根据文件名判断路径)
+    if template_file_name == 'index.html':
+        file_path = os.path.join(app.static_folder, template_file_name)
+    else:
+        # 其他所有流程页面都在 html 目录下
+        file_path = os.path.join(app.static_folder, 'html', template_file_name)
+
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            html_content = f.read()
+    except FileNotFoundError:
+        # 如果找不到文件，则返回 404 响应
+        return Response(f"Template not found: {template_file_name}", status=404)
+
+    # 4. 使用 render_template_string 渲染
+    return render_template_string(html_content, strings=strings)
+
+
 # --- 静态文件服务路由 ---
 
 @app.route('/')
@@ -44,16 +76,51 @@ def root():
     return send_from_directory(app.static_folder, 'index.html')
 
 @app.route('/index.html')
+@app.route('/index.html')
 def serve_index():
-    """显式服务 index.html (解决 404 错误)"""
-    # 显式处理对 /index.html 的请求
-    return send_from_directory(app.static_folder, 'index.html')
+    """
+    根路由和 index.html：渲染 Consent Page 的文本。
+    """
+    participant_id = request.args.get('pid', None)
+
+    if not participant_id:
+        # 如果没有 PID，返回原始静态文件，让前端 JS 处理重定向到 admin_setup
+        return send_from_directory(app.static_folder, 'index.html')
+
+    # 如果有 PID，尝试渲染（Consent Page 的本地化模块名为 "consent"）
+    # 使用 PID 来获取正确的语言
+    return render_template_page('index.html', 'consent', participant_id)
 
 
-# 确保 html 目录下的所有文件可以被访问
+# 确保 html 目录下的所有文件可以被访问 (现在用于渲染模板)
 @app.route('/html/<path:filename>')
 def serve_html(filename):
-    """服务 html 目录下的静态文件"""
+    """
+    服务 html 目录下的静态文件，对实验流程页面进行 Jinja2 渲染。
+    """
+
+    # 流程页面映射表 (key: 文件名, value: localization.py 中的模块名)
+    PAGE_MAPPING = {
+        "demographics.html": "demographics",
+        "baseline_mood.html": "baseline_mood",
+        "instructions_xai.html": "instructions",
+        "instructions_non_xai.html": "instructions",
+        "post_questionnaire.html": "post_questionnaire",
+        "open_ended_qs.html": "open_ended_qs",
+        "debrief.html": "debrief",
+        # XAI_Version.html and non-XAI_version.html are chat interfaces, keep them static for now
+    }
+
+    module_name = PAGE_MAPPING.get(filename)
+
+    if module_name:
+        # 从 URL 参数中获取 PID，这是唯一的可靠方式
+        participant_id = request.args.get('pid', 'DEFAULT')
+
+        # 渲染流程页面
+        return render_template_page(filename, module_name, participant_id)
+
+    # 非流程页面 (admin_setup, chat interfaces, assets) 仍作为静态文件服务
     return send_from_directory(os.path.join(app.static_folder, 'html'), filename)
 
 # 确保 assets 目录下的所有文件可以被访问
@@ -69,7 +136,7 @@ def serve_assets(filename):
 def start_experiment():
     """
     实验初始化路由：
-    1. 接收 PID 和 Condition (XAI/NON_XAI)。
+    1. 接收 PID, Condition (XAI/NON_XAI) 和 Language (en/zh-CN)。
     2. 清除旧的 LLM 会话。
     3. 初始化会话状态并保存到数据文件。
     4. 返回 Consent 页面 URL。
@@ -78,44 +145,25 @@ def start_experiment():
         data = request.json
         participant_id = data.get("participant_id")
         condition = data.get("condition")
+        language = data.get("language")
 
-        if not participant_id or not condition:
-            return jsonify({"error": "Missing participant_id or condition"}), 400
+        if not participant_id or not condition or not language:
+            return jsonify({"error": "Missing participant_id, condition, or language"}), 400
 
         llm_service.clear_session(participant_id)
 
-        # 初始化数据 (这也会写入 INIT 记录)
-        data_manager.init_participant_session(participant_id, condition)
+        # 初始化数据 (这也会写入 INIT 记录, 包含语言)
+        # 假设您已在 data_manager.py 中添加 language 参数
+        data_manager.init_participant_session(participant_id, condition, language)
 
-        # 返回 Consent 页面 URL (这是受试者看到的第一个页面)
-        # 注意: Consent Page现在是 /index.html，且流程控制由 Consent Page处理
-        return jsonify({"success": True, "next_url": "/index.html"})
+        # 返回 Consent 页面 URL (携带 PID)
+        return jsonify({"success": True, "next_url": f"/index.html?pid={participant_id}"})
 
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     except Exception as e:
         print(f"Error in /start_experiment: {e}")
         return jsonify({"error": f"Internal server error: {e}"}), 500
-
-
-# --- 通用数据保存与流程控制路由 ---
-
-# 注意：为了让 Consent 页面也能使用流程控制，我们需要调整 EXPERIMENT_STEPS
-# 新的步骤顺序为：INIT(0), CONSENT_AGREEMENT, DEMOGRAPHICS(1), BASELINE_MOOD(2)...
-# 但是我们不将 CONSENT_AGREEMENT 放入 EXPERIMENT_STEPS，而是使用它的 next_step_index = 0
-# 来指向 EXPERIMENT_STEPS 中的第一个真正数据收集步骤：DEMOGRAPHICS (索引 0)
-# 让我们修改 EXPERIMENT_STEPS 数组以匹配流程：
-
-# backend/config.py (你需要修改 EXPERIMENT_STEPS 如下, 在下一步我再提供完整 config.py)
-# EXPERIMENT_STEPS = [
-#     "DEMOGRAPHICS",
-#     "BASELINE_MOOD",
-#     "INSTRUCTIONS",
-#     "DIALOGUE",
-#     "POST_QUESTIONNAIRE",
-#     "OPEN_ENDED_QS",
-#     "DEBRIEF"
-# ]
 
 
 # --- 通用数据保存与流程控制路由 ---
@@ -130,7 +178,6 @@ def save_data():
         participant_id = data.get("participant_id")
         step_name = data.get("step_name")
         step_data = data.get("data")
-        # current_step_index 代表 EXPERIMENT_STEPS 中的**下一个**步骤的索引
         current_step_index = data.get("current_step_index")
 
         if not participant_id or not step_name or step_data is None or current_step_index is None:
@@ -144,7 +191,6 @@ def save_data():
 
         if next_step_index >= len(EXPERIMENT_STEPS):
             next_url = "/html/debrief.html"
-            next_step_key = "DEBRIEF"
         else:
             next_step_key = EXPERIMENT_STEPS[next_step_index]
 
@@ -162,11 +208,10 @@ def save_data():
             else:
                 next_url = f"/html/{next_step_key.lower()}.html"
 
-        # 返回时告诉前端下一步是哪一个步骤的索引
+        # 3. 返回下一个页面的 URL (FIX: 确保携带 PID)
         return jsonify({
             "success": True,
-            "next_url": next_url,
-            # IMPORTANT: 下一个页面跳转后的 next_step_index 应该为当前 index + 1
+            "next_url": f"{next_url}?pid={participant_id}",
             "next_step_index": current_step_index + 1
         })
 

@@ -112,47 +112,46 @@
     </style>
 </head>
 <body>
-
 <div class="main-container">
     <div class="instruction-section">
-        <h1>Experiment Task Instructions (Non-XAI Version)</h1>
+        <h1>{{ strings.title_non_xai | safe }}</h1>
 
-        <h2>Task Overview</h2>
-        <p>You are about to begin the main part of the experiment: a conversation with an <strong>AI Emotional Support Agent (The Agent)</strong>. In this task, you will interact with the Agent as you would with an empathetic, non-professional listener.</p>
+        <h2>{{ strings.task_overview }}</h2>
+        <p>{{ strings.task_text | safe }}</p>
 
-        <h2>Your Role & Conversation Goal</h2>
-        <p>Please communicate with The Agent naturally, as if sharing your thoughts with a close, supportive friend. <strong>You are playing yourself.</strong></p>
+        <h2>{{ strings.role_goal }}</h2>
+        <p>{{ strings.role_text | safe }}</p>
 
         <ul>
-            <li><strong>Goal:</strong> Discuss any topics related to your feelings, daily life, recent challenges, or small achievements. The Agent's purpose is to provide emotional support and understanding.</li>
-            <li><strong>What to Avoid:</strong> Please avoid asking the Agent for professional advice (e.g., coding, legal, medical, or complex financial analysis).</li>
-            <li><strong>Duration:</strong> The conversation should last for approximately 10 to 15 turns (messages back and forth). There is no strict time limit, but please aim for a meaningful interaction.</li>
+            <li>{{ strings.list_goal | safe }}</li>
+            <li>{{ strings.list_avoid | safe }}</li>
+            <li>{{ strings.list_duration | safe }}</li>
         </ul>
 
-        <h2>Conversation Starters (Suggestions)</h2>
+        <h2>{{ strings.starters_title }}</h2>
         <div class="hint-box">
-            <p>If you're unsure where to begin, here are some suggestions to start the conversation:</p>
+            <p>{{ strings.hint_box_text }}</p>
             <ul>
-                <li><strong>Recent Challenges:</strong> "Did you encounter anything stressful or frustrating at work/school recently?"</li>
-                <li><strong>Small Achievements:</strong> "Is there a small goal you recently accomplished or a little progress you made that you'd like to share?"</li>
-                <li><strong>Daily Life/Interests:</strong> "Tell the Agent about a TV show you are currently watching, or a daily dilemma you'd like their opinion on."</li>
-                <li><strong>Relationships:</strong> "Any small conflicts or warm moments you had with friends, family, or colleagues recently?"</li>
+                <li>{{ strings.starter_challenges | safe }}</li>
+                <li>{{ strings.starter_achievements | safe }}</li>
+                <li>{{ strings.starter_daily_life | safe }}</li>
+                <li>{{ strings.starter_relationships | safe }}</li>
             </ul>
         </div>
 
-        <h2>Ending the Dialogue</h2>
-        <p>When you feel you have adequately expressed your feelings and are ready to conclude the task, please click the dedicated <strong>End Dialogue</strong> button.</p>
+        <h2>{{ strings.ending_title }}</h2>
+        <p>{{ strings.ending_text1 | safe }}</p>
 
         <ul>
-            <li>Clicking the button will prompt a confirmation dialog to ensure you are ready to proceed.</li>
-            <li>Once confirmed, the system will save the final dialogue metrics and automatically advance you to the post-experiment questionnaires.</li>
+            <li>{{ strings.ending_list1 | safe }}</li>
+            <li>{{ strings.ending_list2 | safe }}</li>
         </ul>
 
-        <h2>Experiment Support & Withdrawal</h2>
-        <p>Please remember that your participation is <strong>voluntary</strong>. You may withdraw from the experiment at any time without penalty or loss of benefits. If you wish to withdraw, simply inform the experimenter.</p>
-        <p>If you encounter any technical issues, errors, or have questions during the experiment, please notify the experimenter immediately for assistance.</p>
+        <h2>{{ strings.support_title }}</h2>
+        <p>{{ strings.support_text1 | safe }}</p>
+        <p>{{ strings.support_text2 | safe }}</p>
 
-        <button id="start-btn" class="btn-start">I Understand. Start the Dialogue</button>
+        <button id="start-btn" class="btn-start">{{ strings.button_text }}</button>
         <p id="error-message" class="error-message" style="display: none;"></p>
     </div>
 </div>

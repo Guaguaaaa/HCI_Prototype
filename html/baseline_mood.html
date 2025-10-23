@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Baseline Mood Assessment</title>
+    <title>{{ strings.title }}</title>
     <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
     <link rel="manifest" href="/assets/site.webmanifest" />
 
@@ -156,12 +156,12 @@
 
 <div class="main-container">
     <div class="form-section">
-        <h1>Baseline Mood Assessment</h1>
-        <p>Before beginning the experiment, please answer the following questions to assess your current mood and state of activation.</p>
+        <h1>{{ strings.title }}</h1>
+        <p>{{ strings.intro }}</p>
 
         <form id="mood-form">
             <div class="mood-question">
-                <label for="baseline_mood_valence" class="question-label">1. My mood is generally positive right now (Valence).</label>
+                <label for="baseline_mood_valence" class="question-label">{{ strings.q1_valence | safe }}</label>
 
                 <div class="likert-scale">
                     <div class="likert-option">
@@ -195,14 +195,14 @@
                 </div>
 
                 <div class="likert-labels">
-                    <span style="flex: 1; text-align: left;">1 (Very Negative)</span>
-                    <span style="flex: 1; text-align: center;">4 (Neutral)</span>
-                    <span style="flex: 1; text-align: right;">7 (Very Positive)</span>
+                    <span style="flex: 1; text-align: left;">{{ strings.q1_negative }}</span>
+                    <span style="flex: 1; text-align: center;">{{ strings.neutral }}</span>
+                    <span style="flex: 1; text-align: right;">{{ strings.q1_positive }}</span>
                 </div>
             </div>
 
             <div class="mood-question">
-                <label for="baseline_mood_arousal" class="question-label">2. I feel energetic or tense right now (Arousal).</label>
+                <label for="baseline_mood_arousal" class="question-label">{{ strings.q2_arousal | safe }}</label>
 
                 <div class="likert-scale">
                     <div class="likert-option">
@@ -236,13 +236,13 @@
                 </div>
 
                 <div class="likert-labels">
-                    <span style="flex: 1; text-align: left;">1 (Very Calm / Low Energy)</span>
-                    <span style="flex: 1; text-align: center;">4 (Neutral)</span>
-                    <span style="flex: 1; text-align: right;">7 (Very Excited / High Energy)</span>
+                    <span style="flex: 1; text-align: left;">{{ strings.q2_calm }}</span>
+                    <span style="flex: 1; text-align: center;">{{ strings.neutral }}</span>
+                    <span style="flex: 1; text-align: right;">{{ strings.q2_excited }}</span>
                 </div>
             </div>
 
-            <button type="submit" id="submit-btn" class="btn-submit">Continue to Instructions</button>
+            <button type="submit" id="submit-btn" class="btn-submit">{{ strings.button_text }}</button>
             <p id="error-message" class="error-message" style="display: none;"></p>
         </form>
     </div>
@@ -257,12 +257,17 @@
     const submitButton = document.getElementById('submit-btn');
     const errorMessage = document.getElementById('error-message');
 
+    // JS Localization
+    const ERROR_ANSWER_ALL = '{{ strings.error_answer_all }}';
+    const LOADING_TEXT = '{{ strings.saving_data }}';
+    const CONTINUE_TEXT = '{{ strings.button_text }}';
+
     // 确保从 Session Storage 中获取 participant_id
     const participantId = sessionStorage.getItem('participant_id');
 
     if (!participantId) {
         // 如果没有 PID，说明流程有问题，跳转到管理员设置页
-        errorMessage.textContent = "Error: Participant ID missing. Please start over.";
+        errorMessage.textContent = '{{ strings.error_pid_missing }}';
         errorMessage.style.display = 'block';
         submitButton.disabled = true;
         setTimeout(() => {
@@ -278,7 +283,7 @@
 
         // 客户端验证
         if (!formData.get('baseline_mood_valence') || !formData.get('baseline_mood_arousal')) {
-            errorMessage.textContent = "Please answer both mood questions.";
+            errorMessage.textContent = ERROR_ANSWER_ALL;
             errorMessage.style.display = 'block';
             return;
         }
@@ -289,7 +294,7 @@
         });
 
         submitButton.disabled = true;
-        submitButton.textContent = 'Saving Data...';
+        submitButton.textContent = LOADING_TEXT;
         errorMessage.style.display = 'none';
 
         // 1. 调用后端路由保存数据并获取下一个 URL
@@ -309,7 +314,8 @@
                 // 2. 跳转到下一个页面 (Instructions)
                 window.location.href = apiData.next_url;
             } else {
-                throw new Error(apiData.error || 'Unknown error during data save.');
+                const errorText = apiData.error || '{{ strings.error_unknown_data_save }}';
+                throw new Error(errorText);
             }
         })
         .catch(error => {
@@ -317,7 +323,7 @@
             errorMessage.textContent = `Error: ${error.message}`;
             errorMessage.style.display = 'block';
             submitButton.disabled = false;
-            submitButton.textContent = 'Continue to Instructions';
+            submitButton.textContent = CONTINUE_TEXT;
         });
     });
 </script>

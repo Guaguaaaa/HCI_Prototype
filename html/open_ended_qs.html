@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Open-Ended Questions</title>
+    <title>{{ strings.title }}</title>
     <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
     <link rel="manifest" href="/assets/site.webmanifest" />
 
@@ -133,40 +133,40 @@
 
 <div class="main-container">
     <div class="form-section">
-        <h1>Open-Ended Questions</h1>
-        <p class="intro">Please use the text boxes below to provide additional qualitative feedback on your experience.</p>
+        <h1>{{ strings.title }}</h1>
+        <p class="intro">{{ strings.intro }}</p>
 
         <form id="open-ended-form">
             <div class="form-group">
-                <label for="feedback_trust" class="question-label">1. Briefly explain: Why do you (or do you not) trust this system? (Aim for 2-3 sentences)</label>
+                <label for="feedback_trust" class="question-label">{{ strings.q1_trust }}</label>
                 <textarea id="feedback_trust" name="feedback_trust" rows="4" required></textarea>
             </div>
 
             <div class="form-group">
-                <label for="feedback_empathy" class="question-label">2. Briefly explain: Which details made you feel the system was "empathic" or "not empathic"? (Aim for 2-3 sentences)</label>
+                <label for="feedback_empathy" class="question-label">{{ strings.q2_empathy }}</label>
                 <textarea id="feedback_empathy" name="feedback_empathy" rows="4" required></textarea>
             </div>
 
             <div class="form-group">
-                <label for="feedback_general" class="question-label">3. What aspect of your interaction with the Agent did you find most confusing or most surprising? Do you have any suggestions for improving the Agent's responses or the interface design?</label>
+                <label for="feedback_general" class="question-label">{{ strings.q3_general }}</label>
                 <textarea id="feedback_general" name="feedback_general" rows="4" required></textarea>
             </div>
 
             <div class="form-group">
-                <label for="interview_consent" class="question-label">4. Would you be willing to be contacted for an optional follow-up interview about your experience?</label>
+                <label for="interview_consent" class="question-label">{{ strings.q4_interview }}</label>
                 <div class="radio-group">
-                    <div><input type="radio" id="interview_yes" name="interview_consent" value="Yes" required><label for="interview_yes">Yes, I am willing to be contacted</label></div>
-                    <div><input type="radio" id="interview_no" name="interview_consent" value="No"><label for="interview_no">No, thank you</label></div>
+                    <div><input type="radio" id="interview_yes" name="interview_consent" value="Yes" required><label for="interview_yes">{{ strings.q4_yes }}</label></div>
+                    <div><input type="radio" id="interview_no" name="interview_consent" value="No"><label for="interview_no">{{ strings.q4_no }}</label></div>
                 </div>
             </div>
 
             <div id="contact-section">
-                <label for="contact_email" class="question-label">Please enter your preferred contact email below:</label>
-                <input type="email" id="contact_email" name="contact_email" placeholder="email@example.com">
-                <p><strong>Privacy Note:</strong> This email will be stored separately from your survey data solely for the purpose of recruitment. Your responses (Q1-Q3) remain completely anonymous.</p>
+                <label for="contact_email" class="question-label">{{ strings.contact_label }}</label>
+                <input type="email" id="contact_email" name="contact_email" placeholder="{{ strings.contact_placeholder }}">
+                <p><strong>{{ strings.privacy_note_strong }}</strong> {{ strings.privacy_note_text }}</p>
             </div>
 
-            <button type="submit" id="submit-btn" class="btn-submit">Finish Questionnaire & View Debriefing</button>
+            <button type="submit" id="submit-btn" class="btn-submit">{{ strings.button_text }}</button>
             <p id="error-message" class="error-message" style="display: none;"></p>
         </form>
     </div>
@@ -184,11 +184,17 @@
     const contactSection = document.getElementById('contact-section');
     const contactEmailInput = document.getElementById('contact_email');
 
+    // JS Localization
+    const ERROR_FILL_ALL = '{{ strings.error_fill_all }}';
+    const LOADING_TEXT = '{{ strings.saving_data }}';
+    const FINISH_TEXT = '{{ strings.button_text }}';
+    const ERROR_UNKNOWN_SAVE = '{{ strings.error_unknown_data_save }}';
+
     // 确保从 Session Storage 中获取 participant_id
     const participantId = sessionStorage.getItem('participant_id');
 
     if (!participantId) {
-        errorMessage.textContent = "Error: Participant ID missing. Please start over.";
+        errorMessage.textContent = '{{ strings.error_pid_missing }}';
         errorMessage.style.display = 'block';
         submitButton.disabled = true;
         setTimeout(() => {
@@ -235,16 +241,15 @@
 
         // 最终检查所有必填文本框和单选按钮
         if (!isFormValid || !data.interview_consent || (contactEmailInput.required && !contactEmailInput.value.trim())) {
-             errorMessage.textContent = "Please answer all required questions and provide an email if you consented to follow-up.";
+             errorMessage.textContent = ERROR_FILL_ALL; // Use localized error
              errorMessage.style.display = 'block';
              return;
         }
 
         submitButton.disabled = true;
-        submitButton.textContent = 'Saving Data...';
+        submitButton.textContent = LOADING_TEXT;
         errorMessage.style.display = 'none';
 
-        // Fix 1: Store next_url and next_step_index from the first fetch outside the promise chain
         let mainApiData;
 
         // --- 1. 提交主数据 (Open-ended Questions + Consent Decision) ---
@@ -260,11 +265,10 @@
         })
         .then(response => response.json())
         .then(apiData => {
-            // FIX: Store the main API data here
             mainApiData = apiData;
 
             if (!mainApiData.success) {
-                throw new Error(mainApiData.error || 'Unknown error during main data save.');
+                throw new Error(mainApiData.error || ERROR_UNKNOWN_SAVE);
             }
 
             // --- 2. 如果同意访谈，单独提交联系信息 ---
@@ -304,7 +308,7 @@
             errorMessage.textContent = `Error: ${error.message}`;
             errorMessage.style.display = 'block';
             submitButton.disabled = false;
-            submitButton.textContent = 'Finish Questionnaire & View Debriefing';
+            submitButton.textContent = FINISH_TEXT;
         });
     });
 </script>
