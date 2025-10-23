@@ -93,7 +93,7 @@
     <div class="debrief-section">
         <h1>{{ strings.title }}</h1>
 
-        <p>{{ strings.thank_you }}</p>
+        <p>{{ strings.thank_you | safe }}</p>
 
         <h2>{{ strings.purpose_title }}</h2>
         <p>{{ strings.purpose_1 | safe }}</p>
@@ -113,7 +113,7 @@
             <p>{{ strings.results_p1 }}</p>
             <ul>
               <li><strong>{{ strings.contact_p1 }}</strong> hi@peterguan.com</li>
-                <li><strong>{{ strings.contact_p2 }}</strong></li>
+                <li>{{ strings.contact_p2 | safe }}</li>
             </ul>
         </div>
 

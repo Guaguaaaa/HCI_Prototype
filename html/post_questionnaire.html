@@ -489,7 +489,7 @@
                 </li>
 
                 <li class="question-item">
-                    <label class="question-label">{{ strings.q14_manip_check }}</label>
+                    <label class="question-label">{{ strings.q14_manip_check | safe }}</label>
                     <div class="likert-scale" id="mc">
                         <div><input type="radio" id="mc_yes" name="manip_check_expl" value="1" required><label for="mc_yes">{{ strings.q14_yes }}</label></div>
                         <div><input type="radio" id="mc_no" name="manip_check_expl" value="2"><label for="mc_no">{{ strings.q14_no }}</label></div>

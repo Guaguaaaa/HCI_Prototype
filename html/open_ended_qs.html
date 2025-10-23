@@ -139,17 +139,17 @@
         <form id="open-ended-form">
             <div class="form-group">
                 <label for="feedback_trust" class="question-label">{{ strings.q1_trust }}</label>
-                <textarea id="feedback_trust" name="feedback_trust" rows="4" required></textarea>
+                <textarea id="feedback_trust" name="feedback_trust" rows="4"></textarea>
             </div>
 
             <div class="form-group">
-                <label for="feedback_empathy" class="question-label">{{ strings.q2_empathy }}</label>
-                <textarea id="feedback_empathy" name="feedback_empathy" rows="4" required></textarea>
+                <label for="feedback_empathy" class="question-label">{{ strings.q2_empathy | safe }}</label>
+                <textarea id="feedback_empathy" name="feedback_empathy" rows="4"></textarea>
             </div>
 
             <div class="form-group">
                 <label for="feedback_general" class="question-label">{{ strings.q3_general }}</label>
-                <textarea id="feedback_general" name="feedback_general" rows="4" required></textarea>
+                <textarea id="feedback_general" name="feedback_general" rows="4"></textarea>
             </div>
 
             <div class="form-group">
@@ -184,17 +184,19 @@
     const contactSection = document.getElementById('contact-section');
     const contactEmailInput = document.getElementById('contact_email');
 
-    // JS Localization
-    const ERROR_FILL_ALL = '{{ strings.error_fill_all }}';
+    // --- JS Localization (使用Jinja2注入) ---
+    // 注意：确保您的 localization.py 中有 error_fill_all_highlighted 这个键
+    const ERROR_FILL_ALL_HIGHLIGHTED = '{{ strings.error_fill_all_highlighted | default("Please fill in all required fields (highlighted in red).", true) | safe }}';
     const LOADING_TEXT = '{{ strings.saving_data }}';
     const FINISH_TEXT = '{{ strings.button_text }}';
     const ERROR_UNKNOWN_SAVE = '{{ strings.error_unknown_data_save }}';
+    const ERROR_PID_MISSING = '{{ strings.error_pid_missing }}';
 
     // 确保从 Session Storage 中获取 participant_id
     const participantId = sessionStorage.getItem('participant_id');
 
     if (!participantId) {
-        errorMessage.textContent = '{{ strings.error_pid_missing }}';
+        errorMessage.textContent = ERROR_PID_MISSING;
         errorMessage.style.display = 'block';
         submitButton.disabled = true;
         setTimeout(() => {
@@ -202,105 +204,158 @@
         }, 3000);
     }
 
-    // 监听访谈意愿，显示/隐藏邮箱输入框
+    // 监听访谈意愿，显示/隐藏邮箱输入框 (逻辑不变)
     form.addEventListener('change', function(event) {
         if (event.target.name === 'interview_consent') {
             if (interviewYes.checked) {
                 contactSection.style.display = 'block';
-                contactEmailInput.required = true;
+                contactEmailInput.required = true; // 仅当选Yes时必填
             } else {
                 contactSection.style.display = 'none';
                 contactEmailInput.required = false;
-                contactEmailInput.value = ''; // Clear email if they change their mind
+                contactEmailInput.value = ''; // 清除可能已输入的邮箱
+                // 如果之前因为未填邮箱而出错，清除错误状态
+                contactEmailInput.classList.remove('input-error');
+                const emailLabel = form.querySelector('label[for="contact_email"]');
+                if(emailLabel) emailLabel.classList.remove('label-error');
+                 // 检查是否所有错误都清除了
+                if (!form.querySelector('.input-error, .label-error, .group-error')) {
+                    errorMessage.style.display = 'none';
+                }
             }
         }
     });
 
+    // --- NEW: Function to clear all error highlights (与之前相同) ---
+    function clearErrors() {
+        errorMessage.style.display = 'none';
+        form.querySelectorAll('.input-error, .label-error, .group-error').forEach(el => {
+            el.classList.remove('input-error', 'label-error', 'group-error');
+        });
+        form.querySelectorAll('.form-group.group-error').forEach(el => {
+            el.classList.remove('group-error');
+        });
+    }
+
+    // --- NEW: Function to add error highlight (与之前相同) ---
+    function addError(identifier, isGroupName = false) {
+        let element;
+        let labelElement;
+        let containerElement;
+
+        if (isGroupName) {
+            element = form.querySelector(`input[name="${identifier}"]`);
+            if (!element) return false;
+            containerElement = element.closest('.form-group');
+            labelElement = containerElement?.querySelector('.question-label');
+            if (containerElement) containerElement.classList.add('group-error');
+
+        } else {
+            element = document.getElementById(identifier);
+            if (!element) return false;
+            containerElement = element.closest('.form-group');
+            labelElement = form.querySelector(`label[for="${identifier}"]`);
+            element.classList.add('input-error');
+        }
+
+        if (labelElement) {
+            labelElement.classList.add('label-error');
+        } else if (containerElement) {
+            const genericLabel = containerElement.querySelector('.question-label');
+            if(genericLabel) genericLabel.classList.add('label-error');
+        }
+        return false; // Indicate validation failed
+    }
+
+
     form.addEventListener('submit', function(event) {
         event.preventDefault();
+        clearErrors(); // 首先清除旧错误
 
         const formData = new FormData(form);
         const data = {};
         const contactData = {};
-
         let isFormValid = true;
 
-        // 将 FormData 转换为 JSON 对象
-        formData.forEach((value, key) => {
-            if (key === 'contact_email') {
-                // 确保 contact_email 不被存储在主数据中
-                contactData[key] = value;
-            } else {
-                data[key] = value.trim();
-                // 检查必填项（Q1, Q2, Q3, Q4）
-                if (key !== 'contact_email' && key !== 'interview_consent' && !value.trim()) {
-                    isFormValid = false;
-                }
-            }
-        });
+        // --- MODIFIED VALIDATION LOGIC ---
 
-        // 最终检查所有必填文本框和单选按钮
-        if (!isFormValid || !data.interview_consent || (contactEmailInput.required && !contactEmailInput.value.trim())) {
-             errorMessage.textContent = ERROR_FILL_ALL; // Use localized error
-             errorMessage.style.display = 'block';
-             return;
+        // 1. 收集所有字段的值，包括可选的开放式问题
+        data.feedback_trust = formData.get('feedback_trust')?.trim() || ""; // 获取值，如果为空则设为空字符串
+        data.feedback_empathy = formData.get('feedback_empathy')?.trim() || "";
+        data.feedback_general = formData.get('feedback_general')?.trim() || "";
+        data.interview_consent = formData.get('interview_consent'); // 获取单选按钮值
+        const contactEmail = formData.get('contact_email')?.trim(); // 获取邮箱值
+
+        // 2. 仅验证必填项：interview_consent 和 contact_email (如果前者为Yes)
+        if (!data.interview_consent) {
+             isFormValid = addError('interview_consent', true); // 高亮访谈同意单选组
         }
 
+        // 检查邮箱：仅当 contactEmailInput.required 为 true (即选择了Yes) 且邮箱为空时，才标记为错误
+        if (contactEmailInput.required && !contactEmail) {
+            isFormValid = addError('contact_email'); // 高亮邮箱输入框
+        } else if (contactEmail) {
+             // （可选）如果填写了邮箱，可以进行格式验证
+             if (!/^\S+@\S+\.\S+$/.test(contactEmail)) {
+                 // isFormValid = addError('contact_email'); // 可以选择将无效格式也视为错误
+                 console.warn("Invalid email format entered but not strictly required."); // 或者只是警告
+             }
+             contactData.email = contactEmail; // 准备单独发送的数据
+        }
+
+        // --- END OF MODIFIED VALIDATION LOGIC ---
+
+
+        // 如果验证失败，显示错误并停止
+        if (!isFormValid) {
+             errorMessage.textContent = ERROR_FILL_ALL_HIGHLIGHTED;
+             errorMessage.style.display = 'block';
+             const firstError = form.querySelector('.input-error, .label-error, .group-error');
+             if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+             }
+             return; // 停止提交
+        }
+
+        // --- 验证通过，继续提交 ---
         submitButton.disabled = true;
         submitButton.textContent = LOADING_TEXT;
-        errorMessage.style.display = 'none';
 
         let mainApiData;
 
-        // --- 1. 提交主数据 (Open-ended Questions + Consent Decision) ---
+        // 1. 提交主数据 (现在包含所有字段，无论是否填写)
         fetch('http://127.0.0.1:5000/save_data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 participant_id: participantId,
                 step_name: CURRENT_STEP_NAME,
-                data: data, // 仅包含 Q1, Q2, Q3 和 interview_consent (Yes/No)
-                current_step_index: CURRENT_STEP_INDEX // 下一个步骤的索引是 6 (DEBRIEF)
+                data: data, // 发送包含所有字段的data对象
+                current_step_index: CURRENT_STEP_INDEX // 发送当前步骤索引
             })
         })
         .then(response => response.json())
         .then(apiData => {
             mainApiData = apiData;
+            if (!mainApiData.success) throw new Error(mainApiData.error || ERROR_UNKNOWN_SAVE);
 
-            if (!mainApiData.success) {
-                throw new Error(mainApiData.error || ERROR_UNKNOWN_SAVE);
-            }
-
-            // --- 2. 如果同意访谈，单独提交联系信息 ---
-            if (data.interview_consent === 'Yes' && contactData.contact_email) {
-                // We use the new backend route to store sensitive data separately
+            // 2. 如果同意访谈且填写了邮箱，单独提交联系信息 (逻辑不变)
+            if (data.interview_consent === 'Yes' && contactData.email) {
                 return fetch('http://127.0.0.1:5000/save_contact', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        participant_id: participantId,
-                        email: contactData.contact_email
-                    })
+                    body: JSON.stringify({ participant_id: participantId, email: contactData.email })
                 });
             }
-            // If skipped, return a resolved promise with a success flag to proceed
-            return Promise.resolve({ json: () => Promise.resolve({ success: true }) });
+            return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true }) });
         })
-        .then(response => {
-             // Check if we need to parse JSON (only if contact save was attempted)
-            if (data.interview_consent === 'Yes') {
-                return response.json();
-            } else {
-                return Promise.resolve({ success: true });
-            }
-        })
+        .then(response => response.json())
         .then(contactApiData => {
-            // FIX: Use the stored mainApiData for the final redirect
             if (contactApiData.success) {
-                // 3. 跳转到 Debrief Page (using the next_url from the main data save)
-                window.location.href = mainApiData.next_url;
+                window.location.href = mainApiData.next_url; // 跳转到 Debrief
             } else {
-                throw new Error(contactApiData.error || 'Error saving contact information.');
+                console.error("Error saving contact info:", contactApiData.error);
+                window.location.href = mainApiData.next_url; // 即使联系人保存失败，也继续流程
             }
         })
         .catch(error => {
@@ -309,6 +364,48 @@
             errorMessage.style.display = 'block';
             submitButton.disabled = false;
             submitButton.textContent = FINISH_TEXT;
+        });
+    });
+
+    // --- NEW: Add event listeners to remove errors on input/change (与之前相同) ---
+     form.querySelectorAll('input[required], select[required], textarea[required], input[type="email"]').forEach(input => {
+        const eventType = (input.type === 'radio' || input.type === 'checkbox' || input.tagName === 'SELECT') ? 'change' : 'input';
+        input.addEventListener(eventType, () => {
+            let isValid = false;
+            let identifier = '';
+            let isGroup = false;
+
+            if (input.type === 'radio' || input.type === 'checkbox') {
+                identifier = input.name;
+                isGroup = true;
+                isValid = form.querySelector(`input[name="${identifier}"]:checked`);
+            } else {
+                 identifier = input.id;
+                 isValid = input.value && input.checkValidity();
+                 // Special check for email format - consider valid for clearing error even if format is wrong,
+                 // submit handler will catch format error if you choose to enforce it there.
+                 if (input.type === 'email' && input.value) {
+                     isValid = true; // Clear visual error once user starts typing in email
+                 }
+            }
+
+            // Clear error if the input is now valid OR if it's not required anymore
+            if (isValid || !input.required) {
+                let elementToRemoveErrorFrom = isGroup ? form.querySelector(`input[name="${identifier}"]`) : document.getElementById(identifier);
+                if (!elementToRemoveErrorFrom) return;
+
+                const container = elementToRemoveErrorFrom.closest('.form-group');
+                const label = form.querySelector(`label[for="${identifier}"]`) || container?.querySelector('.question-label');
+
+                if(elementToRemoveErrorFrom) elementToRemoveErrorFrom.classList.remove('input-error');
+                if (label) label.classList.remove('label-error');
+                if (container) container.classList.remove('group-error');
+
+                 // Hide main error message if all errors are cleared
+                if (!form.querySelector('.input-error, .label-error, .group-error')) {
+                    errorMessage.style.display = 'none';
+                }
+            }
         });
     });
 </script>
