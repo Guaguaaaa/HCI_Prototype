@@ -83,7 +83,7 @@ def init_participant_session(participant_id: str, condition: str, language: str)
         "language": language,
         "start_time": time.time(),
         "version_url": VERSION_MAP[condition.upper()],
-        "current_step_index": 0  # <--- 新增：步骤 0 (DEMOGRAPHICS) 是下一步
+        "current_step_index": -1  # <--- 新增：步骤 0 (DEMOGRAPHICS) 是下一步
     }
     save_participant_data(participant_id, "INIT", init_data)
 

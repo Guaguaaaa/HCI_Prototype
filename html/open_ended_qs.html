@@ -260,7 +260,7 @@
                 participant_id: participantId,
                 step_name: CURRENT_STEP_NAME,
                 data: data, // 仅包含 Q1, Q2, Q3 和 interview_consent (Yes/No)
-                current_step_index: CURRENT_STEP_INDEX + 1 // 下一个步骤的索引是 6 (DEBRIEF)
+                current_step_index: CURRENT_STEP_INDEX // 下一个步骤的索引是 6 (DEBRIEF)
             })
         })
         .then(response => response.json())

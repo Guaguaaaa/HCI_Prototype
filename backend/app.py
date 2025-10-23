@@ -91,9 +91,9 @@ def serve_index():
     # Consent 页面比较特殊，它没有在 EXPERIMENT_STEPS 列表中，
     # 但我们只应在受试者刚初始化 (step 0) 时允许访问。
     status = data_manager.get_participant_status(participant_id)
-    expected_index = status.get("current_step_index", 0)  # 默认为 0
+    expected_index = status.get("current_step_index", -1)  # 默认为 -1
 
-    if expected_index != 0:
+    if expected_index > -1:
         # 如果他们已经不在第0步（例如，在第3步），则不应再看到知情同意
         # 我们将他们重定向到他们 *应该* 在的页面
         expected_step_key = EXPERIMENT_STEPS[expected_index]

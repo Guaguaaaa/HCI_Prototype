@@ -191,7 +191,7 @@
                 participant_id: participantId,
                 step_name: CURRENT_STEP_NAME,
                 data: { acknowledged: true, version: "NON_XAI" }, // 记录已阅读说明和版本
-                current_step_index: CURRENT_STEP_INDEX + 1 // 下一个步骤的索引是 3 (DIALOGUE)
+                current_step_index: CURRENT_STEP_INDEX // 下一个步骤的索引是 3 (DIALOGUE)
             })
         })
         .then(response => response.json())
