@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Experiment Consent</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+    <link rel="shortcut icon" href="/assets/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Peter Guan" />
+    <link rel="manifest" href="/assets/site.webmanifest" />
+
+    <style>
+        /* --- CSS Styles --- */
+
+        /* Basic page reset and font settings */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+
+        /* Main container to center the content */
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            max-width: 900px;
+            margin: 0 auto; /* Center container horizontally */
+            text-align: left;
+        }
+
+        /* Form and Consent Content */
+        .consent-section {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+        }
+
+        .consent-section h1 {
+            font-size: 2rem;
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .consent-section h3 {
+            color: #3498db;
+            margin-top: 20px;
+        }
+
+        /* Highlight box for PDF confirmation */
+        .pdf-check {
+            background-color: #fcecec;
+            border: 2px solid #e74c3c;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        .pdf-check strong {
+            color: #e74c3c;
+        }
+
+
+        .consent-text {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 15px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        /* Checkbox Styling */
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 30px;
+        }
+
+        #consent-checkbox {
+            margin-top: 5px; /* Aligns checkbox with the top of the text */
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Button styling */
+        .btn-consent {
+            display: block;
+            width: 100%;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            background-color: #2ecc71;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-consent:hover {
+            background-color: #27ae60;
+            transform: translateY(-2px);
+        }
+
+        .btn-consent:disabled {
+            background-color: #a0c3e8;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        /* Hidden PID for reference */
+        #pid-display {
+            font-size: 0.8rem;
+            color: #999;
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+    <div class="consent-section">
+        <h1>Research Experiment: Informed Consent Confirmation</h1>
+
+        <!-- PDF Confirmation -->
+        <div class="pdf-check">
+            <strong>IMPORTANT:</strong> Please ensure you have read and signed the complete <strong>Informed Consent Form (ICF) PDF</strong> provided by the experimenter before proceeding.
+        </div>
+
+        <div class="consent-text">
+            <h3>Study Summary & Procedure</h3>
+            <p>You are now confirming your participation in a study regarding <strong>AI explainability and its effect on user perception</strong>. Your total estimated experiment time is <strong>15–20 minutes</strong>.</p>
+            <p>The core steps involve: <strong>Questionnaires &rarr; A short dialogue with an AI Agent &rarr; Post-experiment Questionnaires.</strong></p>
+
+            <h3>Key Rights Summary</h3>
+            <ul>
+                <li><strong>Voluntary Participation & Withdrawal:</strong> You are participating voluntarily and may exit the study at any time without penalty. If you withdraw, your collected data will be deleted.</li>
+                <li><strong>Anonymity:</strong> All your dialogue metrics and questionnaire responses are anonymous and are used only for academic research.</li>
+                <li><strong>Important Disclaimer:</strong> The AI Agent is <strong>not a professional</strong>. It does not provide medical or psychological support. If you experience discomfort, please stop immediately and contact the experimenter at <strong>hi@peterguan.com</strong>.</li>
+            </ul>
+
+            <h3>Data Confidentiality</h3>
+            <p>Your privacy is protected. All data will be anonymized using a unique Participant ID and stored securely. No raw conversation text is retained.</p>
+
+        </div>
+
+        <div class="checkbox-group">
+            <input type="checkbox" id="consent-checkbox">
+            <label for="consent-checkbox">
+                I have read and understood the summary above, and I confirm I consent to continue with this study.
+            </label>
+        </div>
+
+        <button id="consent-btn" class="btn-consent" disabled>I Agree and Continue</button>
+        <p id="error-message" class="error-message" style="display: none;"></p>
+        <p id="pid-display">Participant ID: Loading...</p>
+    </div>
+</div>
+
+<script>
+    const CONSENT_STEP_INDEX = 0; // The index for the next step, Demographics, is 0 in EXPERIMENT_STEPS
+    const CONSENT_STEP_NAME = "CONSENT_AGREEMENT";
+
+    const consentButton = document.getElementById('consent-btn');
+    const consentCheckbox = document.getElementById('consent-checkbox');
+    const errorMessage = document.getElementById('error-message');
+    const pidDisplay = document.getElementById('pid-display');
+
+    let participantId = null;
+
+    // --- Initialization and PID Check ---
+    function initializePage() {
+        const urlParams = new URLSearchParams(window.location.search);
+        participantId = urlParams.get('pid');
+
+        if (!participantId) {
+            // If no PID, redirect to Admin Setup
+            pidDisplay.textContent = "Error: Participant ID missing. Redirecting to setup...";
+            pidDisplay.style.color = 'red';
+            setTimeout(() => {
+                window.location.href = '/html/admin_setup.html';
+            }, 3000);
+            return false;
+        }
+
+        pidDisplay.textContent = `Participant ID: ${participantId}`;
+        sessionStorage.setItem('participant_id', participantId); // Store PID for subsequent pages
+        return true;
+    }
+
+    // Enable/Disable button based on checkbox
+    consentCheckbox.addEventListener('change', function() {
+        consentButton.disabled = !this.checked;
+    });
+
+    consentButton.addEventListener('click', function(event) {
+        event.preventDefault();
+
+        if (!participantId) {
+            errorMessage.textContent = "Error: Session not initialized. Please restart from Admin Setup.";
+            errorMessage.style.display = 'block';
+            return;
+        }
+
+        if (!consentCheckbox.checked) {
+            errorMessage.textContent = "Please check the box to confirm your consent.";
+            errorMessage.style.display = 'block';
+            return;
+        }
+
+        // Disable button and show loading state
+        consentButton.disabled = true;
+        consentButton.textContent = 'Saving Consent and Continuing...';
+        errorMessage.style.display = 'none';
+
+        // 1. Call backend route to record user consent data
+        fetch('http://127.0.0.1:5000/save_data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                participant_id: participantId,
+                step_name: CONSENT_STEP_NAME, // Step name: CONSENT_AGREEMENT
+                data: {
+                    consent_given: true,
+                    time_on_page: new Date().getTime() // Record timestamp for time on page calc
+                },
+                current_step_index: CONSENT_STEP_INDEX // Next step index: 0 (DEMOGRAPHICS)
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 2. Redirect to the next page (Demographics)
+                window.location.href = data.next_url;
+            } else {
+                throw new Error(data.error || 'Unknown error during consent save.');
+            }
+        })
+        .catch(error => {
+            console.error('Consent save error:', error);
+            errorMessage.textContent = `Error: ${error.message}`;
+            errorMessage.style.display = 'block';
+            consentButton.disabled = false;
+            consentButton.textContent = 'I Agree and Continue';
+        });
+    });
+
+    // Page start, check PID
+    initializePage();
+</script>
+
+</body>
+</html>

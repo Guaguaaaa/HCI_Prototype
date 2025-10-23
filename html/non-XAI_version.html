@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- This meta tag tells search engines not to index this page -->
+    <meta name="robots" content="noindex, nofollow">
+    <title>Chat Interface</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+    <link rel="shortcut icon" href="/assets/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Peter Guan" />
+    <link rel="manifest" href="/assets/site.webmanifest" />
+
+    <style>
+        /* --- CSS Styles --- */
+
+        /* Basic page reset and font settings */
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #ffffff;
+            color: #333;
+            display: flex;
+            height: 100vh;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Chat window container */
+        #chat-container {
+            width: 100%;
+            max-width: 800px;
+            height: 100vh; /* Fills the full viewport height */
+            background-color: #ffffff;
+            /* Removed box-shadow and border-radius for a borderless look */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Chat log area */
+        #chat-log {
+            flex-grow: 1; /* Takes up all available space */
+            padding: 24px;
+            overflow-y: auto; /* Shows scrollbar when content overflows */
+            display: flex;
+            flex-direction: column;
+            gap: 16px; /* Spacing between messages */
+        }
+
+        /* Common style for a single message */
+        .message {
+            display: flex;
+            align-items: flex-start; /* Align avatar and bubble to the top */
+            gap: 12px;
+            max-width: 75%;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .message .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: #ddd;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: #fff;
+            flex-shrink: 0; /* Prevents the avatar from shrinking */
+        }
+
+        .message .content {
+            padding: 12px 16px;
+            border-radius: 18px;
+            line-height: 1.6;
+            word-wrap: break-word; /* Ensures long words can wrap */
+        }
+
+        /* Styles for AI messages (left side) */
+        .ai-message {
+            align-self: flex-start;
+        }
+        .ai-message .avatar {
+            background-color: #6a5acd; /* AI avatar color */
+        }
+        .ai-message .content {
+            background-color: #f1f0f0;
+            color: #333;
+            border-top-left-radius: 4px;
+        }
+
+        /* Styles for user messages (right side) */
+        .user-message {
+            align-self: flex-end;
+            flex-direction: row-reverse; /* Avatar on the right */
+        }
+        .user-message .avatar {
+            background-color: #007bff; /* User avatar color */
+        }
+        .user-message .content {
+            background-color: #007bff;
+            color: #ffffff;
+            border-top-right-radius: 4px;
+        }
+
+        /* Input area form */
+        #chat-form {
+            display: flex;
+            padding: 16px;
+            border-top: 1px solid #e0e0e0;
+            background-color: #ffffff;
+        }
+
+        /* Text input box */
+        #user-input {
+            flex-grow: 1;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 24px;
+            resize: none; /* Disables manual resizing by the user */
+            font-size: 16px;
+            margin-right: 12px;
+            font-family: inherit;
+        }
+        #user-input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+        }
+
+        /* Send button */
+        #chat-form button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #chat-form button:hover {
+            background-color: #0056b3;
+        }
+
+        #chat-form button:disabled {
+            background-color: #a0c3e8;
+            cursor: not-allowed;
+        }
+
+        /* Message fade-in animation */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* --- New Styles for End Dialogue Button and Modal --- */
+
+        /* Footer to contain input and end button */
+        .chat-footer {
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            background-color: #ffffff;
+            border-top: 1px solid #ddd;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .end-dialogue-container {
+            padding: 5px 0 10px 0;
+        }
+
+        .end-dialogue-button {
+            width: 100%;
+            padding: 10px;
+            background-color: #e74c3c; /* 红色按钮 */
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+
+        .end-dialogue-button:hover {
+            background-color: #c0392b;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none; /* 默认隐藏 */
+            position: fixed;
+            z-index: 1000; /* 确保在最顶层 */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            display: flex; /* 使用 flex 居中 */
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            padding: 25px;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 400px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        .modal-content h3 {
+            margin-top: 0;
+            color: #e74c3c;
+        }
+
+        .modal-buttons {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .modal-buttons button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        #confirm-end-btn {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        #cancel-end-btn {
+            background-color: #bdc3c7;
+            color: #333;
+        }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+
+<!-- --- HTML Structure --- -->
+<div id="chat-container">
+    <!-- Chat log will be displayed here -->
+    <div id="chat-log">
+        <!-- Initial welcome message -->
+        <div class="message ai-message">
+            <div class="avatar">AI</div>
+            <div class="content">
+                <p>Hello! How can I help you today? Ask me anything below.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- User input form -->
+    <div class="chat-footer">
+
+        <div class="end-dialogue-container">
+            <button type="button" id="end-dialogue-button" class="end-dialogue-button">
+                End Dialogue and Proceed to Questionnaire
+            </button>
+        </div>
+
+        <form id="chat-form">
+            <input type="text" id="user-input" placeholder="Type your message..." required>
+            <button type="submit" id="send-button">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+            </button>
+        </form>
+    </div>
+</div>
+
+<div id="end-dialogue-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <h3>Confirm Dialogue End</h3>
+        <p>Are you sure you want to end the conversation and proceed to the final questionnaires?</p>
+        <p>Once ended, you <strong>cannot</strong> return to this chat.</p>
+        <div class="modal-buttons">
+            <button id="confirm-end-btn">Yes, End Dialogue</button>
+            <button id="cancel-end-btn">No, Continue Chat</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- JavaScript Logic ---
+    //const PARTICIPANT_ID = "TEMP_TEST_ID_001"; // <--- 临时设置一个 ID
+    // 确保从 Session Storage 中获取 participant_id
+    const participantId = sessionStorage.getItem('participant_id');
+
+    if (!participantId) {
+        // Fallback error handling if PID is missing (good practice)
+        console.error("Participant ID not found in sessionStorage. Cannot proceed.");
+    }
+
+    const chatForm = document.getElementById('chat-form');
+    const userInput = document.getElementById('user-input');
+    const chatLog = document.getElementById('chat-log');
+    const sendButton = chatForm.querySelector('button');
+
+    chatForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const userText = userInput.value.trim();
+        if (userText === '') return;
+
+        // 1. Add the user's message
+        appendMessage(userText, 'user');
+
+        userInput.value = '';
+        userInput.style.height = 'auto';
+        toggleSendButton();
+
+        // 3. AI response (STREAMING + MARKDOWN)
+        const aiParagraph = appendMessage('', 'ai');
+        aiParagraph.innerHTML = '▋'; // Typing cursor
+
+        let totalResponseText = "";
+
+        fetch('http://127.0.0.1:5000/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            // 确保在 body 中添加 participant_id
+            body: JSON.stringify({
+                message: userText,
+                participant_id: participantId // <--- 新增的字段
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let isFirstChunk = true;
+
+            function readStream() {
+                reader.read().then(({ done, value }) => {
+                    if (done) {
+                        return;
+                    }
+                    if (isFirstChunk) {
+                        aiParagraph.innerHTML = ''; // Clear cursor
+                        isFirstChunk = false;
+                    }
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    totalResponseText += chunk;
+
+                    // AI response is parsed as Markdown
+                    aiParagraph.innerHTML = marked.parse(totalResponseText);
+
+                    chatLog.scrollTop = chatLog.scrollHeight;
+                    readStream();
+                }).catch(error => {
+                    console.error('Error reading stream:', error);
+                    aiParagraph.innerHTML += "<br>⚠️ Error reading streaming message";
+                });
+            }
+            readStream();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            aiParagraph.innerHTML = "⚠️ Unable to connect backend LLM";
+        });
+    });
+
+    userInput.addEventListener('input', toggleSendButton);
+
+    // --- 输入法 (IME) 提交 ---
+    userInput.addEventListener('keydown', function(event) {
+        // 检查用户是否仍在使用输入法组合
+        if (event.isComposing) {
+            return;
+        }
+
+        // 如果按下 Enter 键、没有按 Shift 键，并且不在组合状态
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault(); // 阻止默认的换行
+            chatForm.dispatchEvent(new Event('submit')); // 触发提交
+        }
+    });
+
+    /**
+     * MODIFIED Function to add a message to the chat log
+     * @param {string} text - The message text
+     * @param {string} sender - The sender ('user' or 'ai')
+     * @returns {HTMLElement} - Returns the <p> element where text is stored
+     */
+    function appendMessage(text, sender) {
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message', `${sender}-message`);
+
+        const avatar = document.createElement('div');
+        avatar.classList.add('avatar');
+        avatar.textContent = sender === 'user' ? 'U' : 'AI';
+
+        const content = document.createElement('div');
+        content.classList.add('content');
+
+        const textParagraph = document.createElement('p');
+
+        // --- 用户输入渲染 ---
+        if (sender === 'user') {
+            // 将用户输入视为纯文本，并替换换行符
+            textParagraph.innerHTML = text.replace(/\n/g, '<br>');
+        } else {
+            // AI 的输入（初始为空或光标）
+            textParagraph.innerHTML = text;
+        }
+
+        content.appendChild(textParagraph);
+        messageElement.appendChild(avatar);
+        messageElement.appendChild(content);
+        chatLog.appendChild(messageElement);
+
+        chatLog.scrollTop = chatLog.scrollHeight;
+        return textParagraph; // Return the paragraph element
+    }
+
+    function toggleSendButton() {
+        sendButton.disabled = userInput.value.trim() === '';
+    }
+
+    toggleSendButton();
+
+    // --- New Dialogue Termination Logic ---
+
+    const endDialogueButton = document.getElementById('end-dialogue-button');
+    const endDialogueModal = document.getElementById('end-dialogue-modal');
+    const confirmEndButton = document.getElementById('confirm-end-btn');
+    const cancelEndButton = document.getElementById('cancel-end-btn');
+
+    // Show modal when the end button is clicked
+    endDialogueButton.addEventListener('click', () => {
+        endDialogueModal.style.display = 'flex'; // Use flex to show the modal
+    });
+
+    // Hide modal when the cancel button is clicked
+    cancelEndButton.addEventListener('click', () => {
+        endDialogueModal.style.display = 'none';
+    });
+
+    // Hide modal if user clicks outside of the modal content
+    window.addEventListener('click', (event) => {
+        // 检查点击事件的目标是否是 modal 容器本身 (而不是 modal-content)
+        if (event.target === endDialogueModal) {
+            endDialogueModal.style.display = 'none';
+        }
+    });
+
+    // Final confirmation to end dialogue: Calls the backend
+    confirmEndButton.addEventListener('click', async () => {
+        confirmEndButton.disabled = true;
+        confirmEndButton.textContent = 'Processing...';
+
+        // 禁用所有 UI 交互以防止重复提交或意外操作
+        const messageInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        messageInput.disabled = true;
+        sendButton.disabled = true;
+        endDialogueButton.disabled = true;
+
+        try {
+            const participantId = sessionStorage.getItem('participant_id');
+
+            // 1. 调用新的后端路由来完成对话并获取下一个 URL
+            const response = await fetch('http://127.0.0.1:5000/end_dialogue', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    participant_id: participantId,
+                })
+            });
+
+            const apiData = await response.json();
+
+            if (apiData.success) {
+                // 2. 重定向到下一个步骤 (Post-Questionnaire)
+                window.location.href = apiData.next_url;
+            } else {
+                throw new Error(apiData.error || 'Unknown error during dialogue termination.');
+            }
+
+        } catch (error) {
+            console.error('Dialogue End Error:', error);
+            alert('An error occurred while ending the dialogue. Please contact the experimenter.');
+
+            // 恢复按钮状态，允许用户重试或寻求帮助
+            messageInput.disabled = false;
+            sendButton.disabled = false;
+            endDialogueButton.disabled = false;
+            confirmEndButton.disabled = false;
+            confirmEndButton.textContent = 'Yes, End Dialogue';
+            endDialogueModal.style.display = 'none';
+        }
+    });
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baseline Mood Assessment</title>
+    <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
+    <link rel="manifest" href="/assets/site.webmanifest" />
+
+    <style>
+        /* --- CSS Styles (Consistent look) --- */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: left;
+        }
+
+        .form-section {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+        }
+
+        .form-section h1 {
+            font-size: 2rem;
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .form-section p {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #666;
+        }
+
+        .mood-question {
+            margin-bottom: 30px;
+            border: 1px solid #eee;
+            padding: 20px;
+            border-radius: 6px;
+        }
+
+        label.question-label {
+            display: block;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        /* Likert Scale (7-point) Styling */
+        .likert-scale {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f9f9f9;
+            padding: 10px 0;
+            border-radius: 4px;
+        }
+
+        .likert-option {
+            flex: 1;
+            text-align: center;
+            cursor: pointer;
+            padding: 5px 0;
+        }
+
+        .likert-option input[type="radio"] {
+            display: none;
+        }
+
+        .radio-label-likert {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+            border-radius: 50%;
+            border: 2px solid #ccc;
+            background-color: #fff;
+            color: #555;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .likert-option input[type="radio"]:checked + .radio-label-likert {
+            background-color: #3498db;
+            border-color: #3498db;
+            color: #fff;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.8);
+        }
+
+        .likert-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 0.9rem;
+            color: #888;
+            padding: 0 5px;
+        }
+
+        /* Button styling */
+        .btn-submit {
+            display: block;
+            width: 100%;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            background-color: #3498db;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 30px;
+        }
+
+        .btn-submit:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-submit:disabled {
+            background-color: #a0c3e8;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+    <div class="form-section">
+        <h1>Baseline Mood Assessment</h1>
+        <p>Before beginning the experiment, please answer the following questions to assess your current mood and state of activation.</p>
+
+        <form id="mood-form">
+            <div class="mood-question">
+                <label for="baseline_mood_valence" class="question-label">1. My mood is generally positive right now (Valence).</label>
+
+                <div class="likert-scale">
+                    <div class="likert-option">
+                        <input type="radio" id="val_1" name="baseline_mood_valence" value="1" required>
+                        <label for="val_1" class="radio-label-likert">1</label>
+                    </div>
+                    <div class="likert-option">
+                        <input type="radio" id="val_2" name="baseline_mood_valence" value="2">
+                        <label for="val_2" class="radio-label-likert">2</label>
+                    </div>
+                    <div class="likert-option">
+                        <input type="radio" id="val_3" name="baseline_mood_valence" value="3">
+                        <label for="val_3" class="radio-label-likert">3</label>
+                    </div>
+                    <div class="likert-option">
+                        <input type="radio" id="val_4" name="baseline_mood_valence" value="4">
+                        <label for="val_4" class="radio-label-likert">4</label>
+                    </div>
+                    <div class="likert-option">
+                        <input type="radio" id="val_5" name="baseline_mood_valence" value="5">
+                        <label for="val_5" class="radio-label-likert">5</label>
+                    </div>
+                    <div class="likert-option">
+                        <input type="radio" id="val_6" name="baseline_mood_valence" value="6">
+                        <label for="val_6" class="radio-label-likert">6</label>
+                    </div>
+                    <div class="likert-option">
+                        <input type="radio" id="val_7" name="baseline_mood_valence" value="7">
+                        <label for="val_7" class="radio-label-likert">7</label>
+                    </div>
+                </div>
+
+                <div class="likert-labels">
+                    <span style="flex: 1; text-align: left;">1 (Very Negative)</span>
+                    <span style="flex: 1; text-align: center;">4 (Neutral)</span>
+                    <span style="flex: 1; text-align: right;">7 (Very Positive)</span>
+                </div>
+            </div>
+
+            <div class="mood-question">
+                <label for="baseline_mood_arousal" class="question-label">2. I feel energetic or tense right now (Arousal).</label>
+
+                <div class="likert-scale">
+                    <div class="likert-option">
+                        <input type="radio" id="arousal_1" name="baseline_mood_arousal" value="1" required>
+                        <label for="arousal_1" class="radio-label-likert">1</label>
+                    </div>
+                    <div class="likert-option">
+                        <input type="radio" id="arousal_2" name="baseline_mood_arousal" value="2">
+                        <label for="arousal_2" class="radio-label-likert">2</label>
+                    </div>
+                    <div class="likert-option">
+                        <input type="radio" id="arousal_3" name="baseline_mood_arousal" value="3">
+                        <label for="arousal_3" class="radio-label-likert">3</label>
+                    </div>
+                    <div class="likert-option">
+                        <input type="radio" id="arousal_4" name="baseline_mood_arousal" value="4">
+                        <label for="arousal_4" class="radio-label-likert">4</label>
+                    </div>
+                    <div class="likert-option">
+                        <input type="radio" id="arousal_5" name="baseline_mood_arousal" value="5">
+                        <label for="arousal_5" class="radio-label-likert">5</label>
+                    </div>
+                    <div class="likert-option">
+                        <input type="radio" id="arousal_6" name="baseline_mood_arousal" value="6">
+                        <label for="arousal_6" class="radio-label-likert">6</label>
+                    </div>
+                    <div class="likert-option">
+                        <input type="radio" id="arousal_7" name="baseline_mood_arousal" value="7">
+                        <label for="arousal_7" class="radio-label-likert">7</label>
+                    </div>
+                </div>
+
+                <div class="likert-labels">
+                    <span style="flex: 1; text-align: left;">1 (Very Calm / Low Energy)</span>
+                    <span style="flex: 1; text-align: center;">4 (Neutral)</span>
+                    <span style="flex: 1; text-align: right;">7 (Very Excited / High Energy)</span>
+                </div>
+            </div>
+
+            <button type="submit" id="submit-btn" class="btn-submit">Continue to Instructions</button>
+            <p id="error-message" class="error-message" style="display: none;"></p>
+        </form>
+    </div>
+</div>
+
+<script>
+    // 流程控制索引：BASELINE_MOOD 在 EXPERIMENT_STEPS 数组中的索引是 1
+    const CURRENT_STEP_INDEX = 1;
+    const CURRENT_STEP_NAME = "BASELINE_MOOD";
+
+    const form = document.getElementById('mood-form');
+    const submitButton = document.getElementById('submit-btn');
+    const errorMessage = document.getElementById('error-message');
+
+    // 确保从 Session Storage 中获取 participant_id
+    const participantId = sessionStorage.getItem('participant_id');
+
+    if (!participantId) {
+        // 如果没有 PID，说明流程有问题，跳转到管理员设置页
+        errorMessage.textContent = "Error: Participant ID missing. Please start over.";
+        errorMessage.style.display = 'block';
+        submitButton.disabled = true;
+        setTimeout(() => {
+            window.location.href = '/html/admin_setup.html';
+        }, 3000);
+    }
+
+    form.addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const formData = new FormData(form);
+        const data = {};
+
+        // 客户端验证
+        if (!formData.get('baseline_mood_valence') || !formData.get('baseline_mood_arousal')) {
+            errorMessage.textContent = "Please answer both mood questions.";
+            errorMessage.style.display = 'block';
+            return;
+        }
+
+        // 将 FormData 转换为 JSON 对象，并将值转换为整数
+        formData.forEach((value, key) => {
+            data[key] = parseInt(value);
+        });
+
+        submitButton.disabled = true;
+        submitButton.textContent = 'Saving Data...';
+        errorMessage.style.display = 'none';
+
+        // 1. 调用后端路由保存数据并获取下一个 URL
+        fetch('http://127.0.0.1:5000/save_data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                participant_id: participantId,
+                step_name: CURRENT_STEP_NAME,
+                data: data,
+                current_step_index: CURRENT_STEP_INDEX + 1 // Next step is 2 (INSTRUCTIONS)
+            })
+        })
+        .then(response => response.json())
+        .then(apiData => {
+            if (apiData.success) {
+                // 2. 跳转到下一个页面 (Instructions)
+                window.location.href = apiData.next_url;
+            } else {
+                throw new Error(apiData.error || 'Unknown error during data save.');
+            }
+        })
+        .catch(error => {
+            console.error('Data save error:', error);
+            errorMessage.textContent = `Error: ${error.message}`;
+            errorMessage.style.display = 'block';
+            submitButton.disabled = false;
+            submitButton.textContent = 'Continue to Instructions';
+        });
+    });
+</script>
+
+</body>
+</html>

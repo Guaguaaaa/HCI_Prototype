@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Experiment Instructions</title>
+    <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
+    <link rel="manifest" href="/assets/site.webmanifest" />
+
+    <style>
+        /* --- CSS Styles (Consistent look) --- */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            max-width: 900px;
+            margin: 0 auto;
+            text-align: left;
+        }
+
+        .instruction-section {
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+        }
+
+        .instruction-section h1 {
+            font-size: 2.2rem;
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .instruction-section h2 {
+            font-size: 1.5rem;
+            color: #3498db;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+            margin-top: 30px;
+            margin-bottom: 20px;
+        }
+
+        .hint-box {
+            background-color: #f0f8ff; /* Light blue hint box */
+            border-left: 5px solid #3498db;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .hint-box p {
+            line-height: 1.6;
+            margin: 0;
+            font-style: italic;
+        }
+
+        ul {
+            line-height: 1.6;
+            padding-left: 20px;
+            list-style-type: disc;
+        }
+
+        /* Button styling */
+        .btn-start {
+            display: block;
+            width: 100%;
+            padding: 18px 30px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #fff;
+            background-color: #2ecc71;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 40px;
+        }
+
+        .btn-start:hover {
+            background-color: #27ae60;
+            transform: translateY(-2px);
+        }
+
+        .btn-start:disabled {
+            background-color: #a0c3e8;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+    <div class="instruction-section">
+        <h1>Experiment Task Instructions (Non-XAI Version)</h1>
+
+        <h2>Task Overview</h2>
+        <p>You are about to begin the main part of the experiment: a conversation with an <strong>AI Emotional Support Agent (The Agent)</strong>. In this task, you will interact with the Agent as you would with an empathetic, non-professional listener.</p>
+
+        <h2>Your Role & Conversation Goal</h2>
+        <p>Please communicate with The Agent naturally, as if sharing your thoughts with a close, supportive friend. <strong>You are playing yourself.</strong></p>
+
+        <ul>
+            <li><strong>Goal:</strong> Discuss any topics related to your feelings, daily life, recent challenges, or small achievements. The Agent's purpose is to provide emotional support and understanding.</li>
+            <li><strong>What to Avoid:</strong> Please avoid asking the Agent for professional advice (e.g., coding, legal, medical, or complex financial analysis).</li>
+            <li><strong>Duration:</strong> The conversation should last for approximately 10 to 15 turns (messages back and forth). There is no strict time limit, but please aim for a meaningful interaction.</li>
+        </ul>
+
+        <h2>Conversation Starters (Suggestions)</h2>
+        <div class="hint-box">
+            <p>If you're unsure where to begin, here are some suggestions to start the conversation:</p>
+            <ul>
+                <li><strong>Recent Challenges:</strong> "Did you encounter anything stressful or frustrating at work/school recently?"</li>
+                <li><strong>Small Achievements:</strong> "Is there a small goal you recently accomplished or a little progress you made that you'd like to share?"</li>
+                <li><strong>Daily Life/Interests:</strong> "Tell the Agent about a TV show you are currently watching, or a daily dilemma you'd like their opinion on."</li>
+                <li><strong>Relationships:</strong> "Any small conflicts or warm moments you had with friends, family, or colleagues recently?"</li>
+            </ul>
+        </div>
+
+        <h2>Ending the Dialogue</h2>
+        <p>When you feel you have adequately expressed your feelings and are ready to conclude the task, please click the dedicated <strong>End Dialogue</strong> button.</p>
+
+        <ul>
+            <li>Clicking the button will prompt a confirmation dialog to ensure you are ready to proceed.</li>
+            <li>Once confirmed, the system will save the final dialogue metrics and automatically advance you to the post-experiment questionnaires.</li>
+        </ul>
+
+        <h2>Experiment Support & Withdrawal</h2>
+        <p>Please remember that your participation is <strong>voluntary</strong>. You may withdraw from the experiment at any time without penalty or loss of benefits. If you wish to withdraw, simply inform the experimenter.</p>
+        <p>If you encounter any technical issues, errors, or have questions during the experiment, please notify the experimenter immediately for assistance.</p>
+
+        <button id="start-btn" class="btn-start">I Understand. Start the Dialogue</button>
+        <p id="error-message" class="error-message" style="display: none;"></p>
+    </div>
+</div>
+
+<script>
+    // 流程控制索引：INSTRUCTIONS 在 EXPERIMENT_STEPS 数组中的索引是 2
+    const CURRENT_STEP_INDEX = 2;
+    const CURRENT_STEP_NAME = "INSTRUCTIONS";
+
+    const startButton = document.getElementById('start-btn');
+    const errorMessage = document.getElementById('error-message');
+
+    // 确保从 Session Storage 中获取 participant_id
+    const participantId = sessionStorage.getItem('participant_id');
+
+    if (!participantId) {
+        errorMessage.textContent = "Error: Participant ID missing. Please start over.";
+        errorMessage.style.display = 'block';
+        startButton.disabled = true;
+        setTimeout(() => {
+            window.location.href = '/html/admin_setup.html';
+        }, 3000);
+    }
+
+    startButton.addEventListener('click', function(event) {
+        event.preventDefault();
+
+        startButton.disabled = true;
+        startButton.textContent = 'Loading Chat Interface...';
+        errorMessage.style.display = 'none';
+
+        // 1. 调用后端路由：记录受试者已阅读说明
+        fetch('http://127.0.0.1:5000/save_data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                participant_id: participantId,
+                step_name: CURRENT_STEP_NAME,
+                data: { acknowledged: true, version: "NON_XAI" }, // 记录已阅读说明和版本
+                current_step_index: CURRENT_STEP_INDEX + 1 // 下一个步骤的索引是 3 (DIALOGUE)
+            })
+        })
+        .then(response => response.json())
+        .then(apiData => {
+            if (apiData.success) {
+                // 2. 跳转到对话页面 (后端会根据条件自动跳转)
+                window.location.href = apiData.next_url;
+            } else {
+                throw new Error(apiData.error || 'Unknown error during transition.');
+            }
+        })
+        .catch(error => {
+            console.error('Transition error:', error);
+            errorMessage.textContent = `Error: ${error.message}`;
+            startButton.disabled = false;
+            startButton.textContent = 'I Understand. Start the Dialogue';
+            errorMessage.style.display = 'block';
+        });
+    });
+</script>
+
+</body>
+</html>

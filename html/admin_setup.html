@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Setup</title>
+    <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
+    <link rel="manifest" href="/assets/site.webmanifest" />
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .setup-container {
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+        h1 { color: #3498db; margin-bottom: 30px; }
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+        }
+        input[type="text"], select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        select {
+            appearance: none;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #fff;
+            background-color: #e67e22; /* Orange color for admin */
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover { background-color: #d35400; }
+        button:disabled { background-color: #f39c12; cursor: not-allowed; }
+        .error-message { color: #e74c3c; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="setup-container">
+    <h1>Experiment Admin Setup</h1>
+    <form id="setup-form">
+        <div class="input-group">
+            <label for="participant_id">Participant ID:</label>
+            <input type="text" id="participant_id" required placeholder="e.g., P_001_XAI">
+        </div>
+        <div class="input-group">
+            <label for="condition">Experiment Condition:</label>
+            <select id="condition" required>
+                <option value="" disabled selected>Select Condition</option>
+                <option value="XAI">XAI Version</option>
+                <option value="NON_XAI">Non-XAI Version</option>
+            </select>
+        </div>
+        <button type="submit" id="start-btn">Start Experiment & Go to Consent</button>
+        <p id="error-message" class="error-message" style="display: none;"></p>
+    </form>
+</div>
+
+<script>
+    const form = document.getElementById('setup-form');
+    const startButton = document.getElementById('start-btn');
+    const participantIdInput = document.getElementById('participant_id');
+    const conditionSelect = document.getElementById('condition');
+    const errorMessage = document.getElementById('error-message');
+
+    form.addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const participantId = participantIdInput.value.trim();
+        const condition = conditionSelect.value;
+
+        if (!participantId || !condition) {
+            errorMessage.textContent = "Error: Please provide a valid Participant ID and select a Condition.";
+            errorMessage.style.display = 'block';
+            return;
+        }
+
+        startButton.disabled = true;
+        startButton.textContent = 'Initializing Session...';
+        errorMessage.style.display = 'none';
+
+        // 1. 调用后端路由进行实验初始化
+        fetch('http://127.0.0.1:5000/start_experiment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                participant_id: participantId,
+                condition: condition
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 2. 成功后，将 PID 附加到下一个 URL (Consent Page)
+                const nextUrlWithPid = `/index.html?pid=${participantId}`;
+
+                // 3. 跳转到 Consent Page
+                window.location.href = nextUrlWithPid;
+            } else {
+                throw new Error(data.error || 'Unknown error during startup.');
+            }
+        })
+        .catch(error => {
+            console.error('Experiment startup error:', error);
+            errorMessage.textContent = `Startup Failed: ${error.message}`;
+            errorMessage.style.display = 'block';
+            startButton.disabled = false;
+            startButton.textContent = 'Start Experiment & Go to Consent';
+        });
+    });
+</script>
+
+</body>
+</html>

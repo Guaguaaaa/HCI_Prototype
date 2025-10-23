@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Open-Ended Questions</title>
+    <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
+    <link rel="manifest" href="/assets/site.webmanifest" />
+
+    <style>
+        /* --- CSS Styles (Consistent look) --- */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            min-height: 100%;
+            padding: 40px 20px;
+            box-sizing: border-box;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .form-section {
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+        }
+
+        .form-section h1 {
+            font-size: 2.2rem;
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .form-section p.intro {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .form-group {
+            margin-bottom: 30px;
+        }
+
+        .question-label {
+            display: block;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .radio-group div {
+            margin-bottom: 10px;
+        }
+
+        /* --- Privacy/Contact Section --- */
+        #contact-section {
+            padding: 20px;
+            border: 2px dashed #3498db;
+            border-radius: 8px;
+            margin-top: 30px;
+            background-color: #f0f8ff;
+            display: none; /* Default hidden */
+        }
+
+        #contact-section p {
+            font-size: 0.95rem;
+            color: #2980b9;
+        }
+
+        /* Button styling */
+        .btn-submit {
+            display: block;
+            width: 100%;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            background-color: #1abc9c; /* Teal/Green for final questions */
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 40px;
+        }
+
+        .btn-submit:hover {
+            background-color: #16a085;
+        }
+
+        .btn-submit:disabled {
+            background-color: #a0c3e8;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+    <div class="form-section">
+        <h1>Open-Ended Questions</h1>
+        <p class="intro">Please use the text boxes below to provide additional qualitative feedback on your experience.</p>
+
+        <form id="open-ended-form">
+            <div class="form-group">
+                <label for="feedback_trust" class="question-label">1. Briefly explain: Why do you (or do you not) trust this system? (Aim for 2-3 sentences)</label>
+                <textarea id="feedback_trust" name="feedback_trust" rows="4" required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="feedback_empathy" class="question-label">2. Briefly explain: Which details made you feel the system was "empathic" or "not empathic"? (Aim for 2-3 sentences)</label>
+                <textarea id="feedback_empathy" name="feedback_empathy" rows="4" required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="feedback_general" class="question-label">3. What aspect of your interaction with the Agent did you find most confusing or most surprising? Do you have any suggestions for improving the Agent's responses or the interface design?</label>
+                <textarea id="feedback_general" name="feedback_general" rows="4" required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="interview_consent" class="question-label">4. Would you be willing to be contacted for an optional follow-up interview about your experience?</label>
+                <div class="radio-group">
+                    <div><input type="radio" id="interview_yes" name="interview_consent" value="Yes" required><label for="interview_yes">Yes, I am willing to be contacted</label></div>
+                    <div><input type="radio" id="interview_no" name="interview_consent" value="No"><label for="interview_no">No, thank you</label></div>
+                </div>
+            </div>
+
+            <div id="contact-section">
+                <label for="contact_email" class="question-label">Please enter your preferred contact email below:</label>
+                <input type="email" id="contact_email" name="contact_email" placeholder="email@example.com">
+                <p><strong>Privacy Note:</strong> This email will be stored separately from your survey data solely for the purpose of recruitment. Your responses (Q1-Q3) remain completely anonymous.</p>
+            </div>
+
+            <button type="submit" id="submit-btn" class="btn-submit">Finish Questionnaire & View Debriefing</button>
+            <p id="error-message" class="error-message" style="display: none;"></p>
+        </form>
+    </div>
+</div>
+
+<script>
+    // 流程控制索引：OPEN_ENDED_QS 在 EXPERIMENT_STEPS 数组中的索引是 5
+    const CURRENT_STEP_INDEX = 5;
+    const CURRENT_STEP_NAME = "OPEN_ENDED_QS";
+
+    const form = document.getElementById('open-ended-form');
+    const submitButton = document.getElementById('submit-btn');
+    const errorMessage = document.getElementById('error-message');
+    const interviewYes = document.getElementById('interview_yes');
+    const contactSection = document.getElementById('contact-section');
+    const contactEmailInput = document.getElementById('contact_email');
+
+    // 确保从 Session Storage 中获取 participant_id
+    const participantId = sessionStorage.getItem('participant_id');
+
+    if (!participantId) {
+        errorMessage.textContent = "Error: Participant ID missing. Please start over.";
+        errorMessage.style.display = 'block';
+        submitButton.disabled = true;
+        setTimeout(() => {
+            window.location.href = '/html/admin_setup.html';
+        }, 3000);
+    }
+
+    // 监听访谈意愿，显示/隐藏邮箱输入框
+    form.addEventListener('change', function(event) {
+        if (event.target.name === 'interview_consent') {
+            if (interviewYes.checked) {
+                contactSection.style.display = 'block';
+                contactEmailInput.required = true;
+            } else {
+                contactSection.style.display = 'none';
+                contactEmailInput.required = false;
+                contactEmailInput.value = ''; // Clear email if they change their mind
+            }
+        }
+    });
+
+    form.addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const formData = new FormData(form);
+        const data = {};
+        const contactData = {};
+
+        let isFormValid = true;
+
+        // 将 FormData 转换为 JSON 对象
+        formData.forEach((value, key) => {
+            if (key === 'contact_email') {
+                // 确保 contact_email 不被存储在主数据中
+                contactData[key] = value;
+            } else {
+                data[key] = value.trim();
+                // 检查必填项（Q1, Q2, Q3, Q4）
+                if (key !== 'contact_email' && key !== 'interview_consent' && !value.trim()) {
+                    isFormValid = false;
+                }
+            }
+        });
+
+        // 最终检查所有必填文本框和单选按钮
+        if (!isFormValid || !data.interview_consent || (contactEmailInput.required && !contactEmailInput.value.trim())) {
+             errorMessage.textContent = "Please answer all required questions and provide an email if you consented to follow-up.";
+             errorMessage.style.display = 'block';
+             return;
+        }
+
+        submitButton.disabled = true;
+        submitButton.textContent = 'Saving Data...';
+        errorMessage.style.display = 'none';
+
+        // Fix 1: Store next_url and next_step_index from the first fetch outside the promise chain
+        let mainApiData;
+
+        // --- 1. 提交主数据 (Open-ended Questions + Consent Decision) ---
+        fetch('http://127.0.0.1:5000/save_data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                participant_id: participantId,
+                step_name: CURRENT_STEP_NAME,
+                data: data, // 仅包含 Q1, Q2, Q3 和 interview_consent (Yes/No)
+                current_step_index: CURRENT_STEP_INDEX + 1 // 下一个步骤的索引是 6 (DEBRIEF)
+            })
+        })
+        .then(response => response.json())
+        .then(apiData => {
+            // FIX: Store the main API data here
+            mainApiData = apiData;
+
+            if (!mainApiData.success) {
+                throw new Error(mainApiData.error || 'Unknown error during main data save.');
+            }
+
+            // --- 2. 如果同意访谈，单独提交联系信息 ---
+            if (data.interview_consent === 'Yes' && contactData.contact_email) {
+                // We use the new backend route to store sensitive data separately
+                return fetch('http://127.0.0.1:5000/save_contact', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        participant_id: participantId,
+                        email: contactData.contact_email
+                    })
+                });
+            }
+            // If skipped, return a resolved promise with a success flag to proceed
+            return Promise.resolve({ json: () => Promise.resolve({ success: true }) });
+        })
+        .then(response => {
+             // Check if we need to parse JSON (only if contact save was attempted)
+            if (data.interview_consent === 'Yes') {
+                return response.json();
+            } else {
+                return Promise.resolve({ success: true });
+            }
+        })
+        .then(contactApiData => {
+            // FIX: Use the stored mainApiData for the final redirect
+            if (contactApiData.success) {
+                // 3. 跳转到 Debrief Page (using the next_url from the main data save)
+                window.location.href = mainApiData.next_url;
+            } else {
+                throw new Error(contactApiData.error || 'Error saving contact information.');
+            }
+        })
+        .catch(error => {
+            console.error('Data save error:', error);
+            errorMessage.textContent = `Error: ${error.message}`;
+            errorMessage.style.display = 'block';
+            submitButton.disabled = false;
+            submitButton.textContent = 'Finish Questionnaire & View Debriefing';
+        });
+    });
+</script>
+
+</body>
+</html>

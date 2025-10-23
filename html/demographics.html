@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demographics</title>
+    <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
+    <link rel="manifest" href="/assets/site.webmanifest" />
+
+    <style>
+        /* --- CSS Styles (与 Consent 页面保持一致的容器和字体) --- */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            max-width: 800px; /* 稍微放大容器以适应 Likert 7点量表 */
+            margin: 0 auto;
+            text-align: left;
+        }
+
+        .form-section {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+        }
+
+        .form-section h1 {
+            font-size: 2rem;
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+
+        .radio-group div, .checkbox-group div {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .radio-group input[type="radio"], .checkbox-group input[type="checkbox"] {
+            margin-right: 10px;
+        }
+
+        /* --- Likert Scale Styling (7-point) --- */
+        .likert-scale {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f9f9f9;
+            padding: 10px 0;
+            border-radius: 4px;
+        }
+
+        .likert-option {
+            flex: 1;
+            text-align: center;
+            cursor: pointer;
+            padding: 5px 0;
+        }
+
+        .likert-option input[type="radio"] {
+            display: none; /* Hide the default radio button */
+        }
+
+        .radio-label-likert {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+            border-radius: 50%;
+            border: 2px solid #ccc;
+            background-color: #fff;
+            color: #555;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .likert-option input[type="radio"]:checked + .radio-label-likert {
+            background-color: #3498db;
+            border-color: #3498db;
+            color: #fff;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.8);
+        }
+
+        .likert-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 0.9rem;
+            color: #888;
+            padding: 0 5px;
+        }
+
+
+        /* Button styling */
+        .btn-submit {
+            display: block;
+            width: 100%;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            background-color: #3498db;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 30px;
+        }
+
+        .btn-submit:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-submit:disabled {
+            background-color: #a0c3e8;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+    <div class="form-section">
+        <h1>Demographics Survey</h1>
+        <p>Please provide the following basic information about yourself. Your answers will be kept confidential and used only for statistical analysis.</p>
+
+        <form id="demographics-form">
+            <div class="form-group">
+                <label for="age">1. Age (in years):</label>
+                <input type="number" id="age" name="age" required min="18" max="100">
+            </div>
+
+            <div class="form-group">
+                <label>2. Gender:</label>
+                <div class="radio-group">
+                    <div><input type="radio" id="female" name="gender" value="Female" required><label for="female">Female</label></div>
+                    <div><input type="radio" id="male" name="gender" value="Male"><label for="male">Male</label></div>
+                    <div><input type="radio" id="nonbinary" name="gender" value="Non-binary/Other"><label for="nonbinary">Non-binary/Other</label></div>
+                    <div><input type="radio" id="prefer_not_to_say_gender" name="gender" value="Prefer not to say"><label for="prefer_not_to_say_gender">Prefer not to say</label></div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="education">3. Highest Level of Education Completed:</label>
+                <select id="education" name="education" required>
+                    <option value="" disabled selected>Select an option</option>
+                    <option value="High School">High School Diploma or equivalent</option>
+                    <option value="Associate">Associate's Degree</option>
+                    <option value="Bachelor">Bachelor's Degree</option>
+                    <option value="Master">Master's Degree</option>
+                    <option value="Doctorate">Doctorate or Professional Degree</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="chatbot_frequency" class="question-label">4. How often do you typically use chatbots (e.g., Siri, ChatGPT, Gemini, emotional support bots)?</label>
+
+                <div class="likert-scale">
+                    <div class="likert-option">
+                        <input type="radio" id="freq_1" name="chatbot_frequency" value="1" required>
+                        <label for="freq_1" class="radio-label-likert">1</label>
+                    </div>
+                    <div class="likert-option">
+                        <input type="radio" id="freq_2" name="chatbot_frequency" value="2">
+                        <label for="freq_2" class="radio-label-likert">2</label>
+                    </div>
+                    <div class="likert-option">
+                        <input type="radio" id="freq_3" name="chatbot_frequency" value="3">
+                        <label for="freq_3" class="radio-label-likert">3</label>
+                    </div>
+                    <div class="likert-option">
+                        <input type="radio" id="freq_4" name="chatbot_frequency" value="4">
+                        <label for="freq_4" class="radio-label-likert">4</label>
+                    </div>
+                    <div class="likert-option">
+                        <input type="radio" id="freq_5" name="chatbot_frequency" value="5">
+                        <label for="freq_5" class="radio-label-likert">5</label>
+                    </div>
+                    <div class="likert-option">
+                        <input type="radio" id="freq_6" name="chatbot_frequency" value="6">
+                        <label for="freq_6" class="radio-label-likert">6</label>
+                    </div>
+                    <div class="likert-option">
+                        <input type="radio" id="freq_7" name="chatbot_frequency" value="7">
+                        <label for="freq_7" class="radio-label-likert">7</label>
+                    </div>
+                </div>
+
+                <div class="likert-labels">
+                    <span style="flex: 1; text-align: left;">1 (Never)</span>
+                    <span style="flex: 1; text-align: right;">7 (Very Often)</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>5. Have you ever received psychological counseling or been diagnosed with a mental health issue?</label>
+                <div class="radio-group">
+                    <div><input type="radio" id="mh_yes" name="mental_health_history" value="Yes" required><label for="mh_yes">Yes</label></div>
+                    <div><input type="radio" id="mh_no" name="mental_health_history" value="No"><label for="mh_no">No</label></div>
+                    <div><input type="radio" id="mh_prefer_not" name="mental_health_history" value="Prefer not to say"><label for="mh_prefer_not">Prefer not to say</label></div>
+                </div>
+            </div>
+
+
+            <button type="submit" id="submit-btn" class="btn-submit">Continue to Next Step</button>
+            <p id="error-message" class="error-message" style="display: none;"></p>
+        </form>
+    </div>
+</div>
+
+<script>
+    // 流程控制索引：DEMOGRAPHICS 在 EXPERIMENT_STEPS 数组中的索引是 0
+    const CURRENT_STEP_INDEX = 0;
+    const CURRENT_STEP_NAME = "DEMOGRAPHICS";
+
+    const form = document.getElementById('demographics-form');
+    const submitButton = document.getElementById('submit-btn');
+    const errorMessage = document.getElementById('error-message');
+
+    // 确保从 Session Storage 中获取 participant_id
+    const participantId = sessionStorage.getItem('participant_id');
+
+    if (!participantId) {
+        // 如果没有 PID，说明流程有问题，跳转到管理员设置页
+        errorMessage.textContent = "Error: Participant ID missing. Please start over.";
+        errorMessage.style.display = 'block';
+        submitButton.disabled = true;
+        setTimeout(() => {
+            window.location.href = '/html/admin_setup.html';
+        }, 3000);
+    }
+
+    form.addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const formData = new FormData(form);
+        const data = {};
+        let isFormValid = true;
+
+        // 收集数据并进行客户端验证
+        formData.forEach((value, key) => {
+            data[key] = value;
+            // 简单检查必填项（age, gender, education, chatbot_frequency, mental_health_history）
+            if (key === 'age' && !value) {
+                isFormValid = false;
+            }
+            if ((key === 'gender' || key === 'education' || key === 'chatbot_frequency' || key === 'mental_health_history') && !value) {
+                isFormValid = false;
+            }
+        });
+
+        // 由于 FormData.forEach 不会包含未选中的 radio/checkbox 的键，
+        // 最好是检查最终的 data 对象中是否包含所有必填键
+        const requiredFields = ['age', 'gender', 'education', 'chatbot_frequency', 'mental_health_history'];
+        requiredFields.forEach(field => {
+            if (!data[field]) {
+                isFormValid = false;
+            }
+            // 将频率转换为整数
+            if (field === 'chatbot_frequency' && data[field]) {
+                data[field] = parseInt(data[field]);
+            }
+        });
+
+        if (!isFormValid) {
+            errorMessage.textContent = "Please fill in all required fields.";
+            errorMessage.style.display = 'block';
+            return;
+        }
+
+        submitButton.disabled = true;
+        submitButton.textContent = 'Saving Data...';
+        errorMessage.style.display = 'none';
+
+        // 1. 调用后端路由保存数据并获取下一个 URL
+        fetch('http://127.0.0.1:5000/save_data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                participant_id: participantId,
+                step_name: CURRENT_STEP_NAME,
+                data: data,
+                current_step_index: CURRENT_STEP_INDEX + 1 // 下一个步骤的索引是 1 (BASELINE_MOOD)
+            })
+        })
+        .then(response => response.json())
+        .then(apiData => {
+            if (apiData.success) {
+                // 2. 跳转到下一个页面 (Baseline Mood)
+                window.location.href = apiData.next_url;
+            } else {
+                throw new Error(apiData.error || 'Unknown error during data save.');
+            }
+        })
+        .catch(error => {
+            console.error('Data save error:', error);
+            errorMessage.textContent = `Error: ${error.message}`;
+            errorMessage.style.display = 'block';
+            submitButton.disabled = false;
+            submitButton.textContent = 'Continue to Next Step';
+        });
+    });
+</script>
+
+</body>
+</html>

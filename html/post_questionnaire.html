@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post-Experiment Questionnaire</title>
+    <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
+    <link rel="manifest" href="/assets/site.webmanifest" />
+
+    <style>
+        /* --- CSS Styles (Consistent look) --- */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            min-height: 100%;
+            padding: 40px 20px;
+            box-sizing: border-box;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .form-section {
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+        }
+
+        .form-section h1 {
+            font-size: 2.2rem;
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .form-section p.intro {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .question-list {
+            list-style: none;
+            padding: 0;
+            counter-reset: question-counter; /* 初始化计数器 */
+        }
+
+        .question-item {
+            margin-bottom: 35px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background-color: #f9f9f9;
+        }
+
+        /* Section Dividers */
+        .question-section-title {
+            font-size: 1.4rem;
+            color: #3498db;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+            font-weight: 700;
+        }
+
+        .question-label {
+            display: block;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        /* Likert Scale (7-point) Styling */
+        .likert-scale {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #fff;
+            padding: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .likert-option {
+            flex: 1;
+            text-align: center;
+            cursor: pointer;
+            padding: 5px 0;
+            user-select: none;
+        }
+
+        .likert-option input[type="radio"] {
+            display: none;
+        }
+
+        .radio-label-likert {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+            border-radius: 50%;
+            border: 2px solid #ccc;
+            background-color: #fff;
+            color: #555;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .likert-option input[type="radio"]:checked + .radio-label-likert {
+            background-color: #3498db;
+            border-color: #3498db;
+            color: #fff;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.8);
+        }
+
+        .likert-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 0.9rem;
+            color: #888;
+            padding: 0 5px;
+        }
+
+        .likert-labels span {
+            flex: 1;
+            text-align: center;
+        }
+        .likert-labels span:first-child { text-align: left; }
+        .likert-labels span:last-child { text-align: right; }
+        .likert-labels span:nth-child(4) { text-align: center; } /* Neutral */
+
+        /* Special Styling for Attention Check */
+        .attention-check {
+            border: 2px dashed #e74c3c;
+            background-color: #fcecec;
+        }
+
+        /* Button styling */
+        .btn-submit {
+            display: block;
+            width: 100%;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            background-color: #f39c12;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 40px;
+        }
+
+        .btn-submit:hover {
+            background-color: #e67e22;
+        }
+
+        .btn-submit:disabled {
+            background-color: #a0c3e8;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+    <div class="form-section">
+        <h1>Post-Experiment Questionnaire</h1>
+        <p class="intro">Please reflect on the conversation you just had with the AI Agent and answer the following questions based on your experience. Select the option that best reflects your agreement with the statement. (1 = Strongly Disagree, 7 = Strongly Agree)</p>
+
+        <form id="post-questionnaire-form">
+            <ul class="question-list">
+
+                <h2 class="question-section-title">Section A: Trust (General Reliability and Intent)</h2>
+
+                <li class="question-item">
+                    <label class="question-label">1. This agent is reliable.</label>
+                    <div class="likert-scale" id="qA1">
+                        <div class="likert-option"><input type="radio" id="qa1_1" name="trust_reliable" value="1" required><label for="qa1_1" class="radio-label-likert">1</label></div>
+                        <div class="likert-option"><input type="radio" id="qa1_2" name="trust_reliable" value="2"><label for="qa1_2" class="radio-label-likert">2</label></div>
+                        <div class="likert-option"><input type="radio" id="qa1_3" name="trust_reliable" value="3"><label for="qa1_3" class="radio-label-likert">3</label></div>
+                        <div class="likert-option"><input type="radio" id="qa1_4" name="trust_reliable" value="4"><label for="qa1_4" class="radio-label-likert">4</label></div>
+                        <div class="likert-option"><input type="radio" id="qa1_5" name="trust_reliable" value="5"><label for="qa1_5" class="radio-label-likert">5</label></div>
+                        <div class="likert-option"><input type="radio" id="qa1_6" name="trust_reliable" value="6"><label for="qa1_6" class="radio-label-likert">6</label></div>
+                        <div class="likert-option"><input type="radio" id="qa1_7" name="trust_reliable" value="7"><label for="qa1_7" class="radio-label-likert">7</label></div>
+                    </div>
+                    <div class="likert-labels">
+                        <span>1 (Strongly Disagree)</span>
+                        <span></span>
+                        <span></span>
+                        <span>4 (Neutral)</span>
+                        <span></span>
+                        <span></span>
+                        <span>7 (Strongly Agree)</span>
+                    </div>
+                </li>
+
+                <li class="question-item">
+                    <label class="question-label">2. The agent's behavior is predictable.</label>
+                    <div class="likert-scale" id="qA2">
+                        <div class="likert-option"><input type="radio" id="qa2_1" name="trust_predictable" value="1" required><label for="qa2_1" class="radio-label-likert">1</label></div>
+                        <div class="likert-option"><input type="radio" id="qa2_2" name="trust_predictable" value="2"><label for="qa2_2" class="radio-label-likert">2</label></div>
+                        <div class="likert-option"><input type="radio" id="qa2_3" name="trust_predictable" value="3"><label for="qa2_3" class="radio-label-likert">3</label></div>
+                        <div class="likert-option"><input type="radio" id="qa2_4" name="trust_predictable" value="4"><label for="qa2_4" class="radio-label-likert">4</label></div>
+                        <div class="likert-option"><input type="radio" id="qa2_5" name="trust_predictable" value="5"><label for="qa2_5" class="radio-label-likert">5</label></div>
+                        <div class="likert-option"><input type="radio" id="qa2_6" name="trust_predictable" value="6"><label for="qa2_6" class="radio-label-likert">6</label></div>
+                        <div class="likert-option"><input type="radio" id="qa2_7" name="trust_predictable" value="7"><label for="qa2_7" class="radio-label-likert">7</label></div>
+                    </div>
+                    <div class="likert-labels">
+                        <span>1 (Strongly Disagree)</span>
+                        <span></span>
+                        <span></span>
+                        <span>4 (Neutral)</span>
+                        <span></span>
+                        <span></span>
+                        <span>7 (Strongly Agree)</span>
+                    </div>
+                </li>
+
+                <li class="question-item">
+                    <label class="question-label">3. I would rely on this agent when seeking emotional support.</label>
+                    <div class="likert-scale" id="qA3">
+                        <div class="likert-option"><input type="radio" id="qa3_1" name="trust_dependent" value="1" required><label for="qa3_1" class="radio-label-likert">1</label></div>
+                        <div class="likert-option"><input type="radio" id="qa3_2" name="trust_dependent" value="2"><label for="qa3_2" class="radio-label-likert">2</label></div>
+                        <div class="likert-option"><input type="radio" id="qa3_3" name="trust_dependent" value="3"><label for="qa3_3" class="radio-label-likert">3</label></div>
+                        <div class="likert-option"><input type="radio" id="qa3_4" name="trust_dependent" value="4"><label for="qa3_4" class="radio-label-likert">4</label></div>
+                        <div class="likert-option"><input type="radio" id="qa3_5" name="trust_dependent" value="5"><label for="qa3_5" class="radio-label-likert">5</label></div>
+                        <div class="likert-option"><input type="radio" id="qa3_6" name="trust_dependent" value="6"><label for="qa3_6" class="radio-label-likert">6</label></div>
+                        <div class="likert-option"><input type="radio" id="qa3_7" name="trust_dependent" value="7"><label for="qa3_7" class="radio-label-likert">7</label></div>
+                    </div>
+                    <div class="likert-labels">
+                        <span>1 (Strongly Disagree)</span>
+                        <span></span>
+                        <span></span>
+                        <span>4 (Neutral)</span>
+                        <span></span>
+                        <span></span>
+                        <span>7 (Strongly Agree)</span>
+                    </div>
+                </li>
+
+                <li class="question-item">
+                    <label class="question-label">4. I believe the agent can correctly identify my emotions.</label>
+                    <div class="likert-scale" id="qA4">
+                        <div class="likert-option"><input type="radio" id="qa4_1" name="trust_confidence" value="1" required><label for="qa4_1" class="radio-label-likert">1</label></div>
+                        <div class="likert-option"><input type="radio" id="qa4_2" name="trust_confidence" value="2"><label for="qa4_2" class="radio-label-likert">2</label></div>
+                        <div class="likert-option"><input type="radio" id="qa4_3" name="trust_confidence" value="3"><label for="qa4_3" class="radio-label-likert">3</label></div>
+                        <div class="likert-option"><input type="radio" id="qa4_4" name="trust_confidence" value="4"><label for="qa4_4" class="radio-label-likert">4</label></div>
+                        <div class="likert-option"><input type="radio" id="qa4_5" name="trust_confidence" value="5"><label for="qa4_5" class="radio-label-likert">5</label></div>
+                        <div class="likert-option"><input type="radio" id="qa4_6" name="trust_confidence" value="6"><label for="qa4_6" class="radio-label-likert">6</label></div>
+                        <div class="likert-option"><input type="radio" id="qa4_7" name="trust_confidence" value="7"><label for="qa4_7" class="radio-label-likert">7</label></div>
+                    </div>
+                    <div class="likert-labels">
+                        <span>1 (Strongly Disagree)</span>
+                        <span></span>
+                        <span></span>
+                        <span>4 (Neutral)</span>
+                        <span></span>
+                        <span></span>
+                        <span>7 (Strongly Agree)</span>
+                    </div>
+                </li>
+
+                <li class="question-item">
+                    <label class="question-label">5. I think the agent's goal is to help me (not mislead).</label>
+                    <div class="likert-scale" id="qA5">
+                        <div class="likert-option"><input type="radio" id="qa5_1" name="trust_intent" value="1" required><label for="qa5_1" class="radio-label-likert">1</label></div>
+                        <div class="likert-option"><input type="radio" id="qa5_2" name="trust_intent" value="2"><label for="qa5_2" class="radio-label-likert">2</label></div>
+                        <div class="likert-option"><input type="radio" id="qa5_3" name="trust_intent" value="3"><label for="qa5_3" class="radio-label-likert">3</label></div>
+                        <div class="likert-option"><input type="radio" id="qa5_4" name="trust_intent" value="4"><label for="qa5_4" class="radio-label-likert">4</label></div>
+                        <div class="likert-option"><input type="radio" id="qa5_5" name="trust_intent" value="5"><label for="qa5_5" class="radio-label-likert">5</label></div>
+                        <div class="likert-option"><input type="radio" id="qa5_6" name="trust_intent" value="6"><label for="qa5_6" class="radio-label-likert">6</label></div>
+                        <div class="likert-option"><input type="radio" id="qa5_7" name="trust_intent" value="7"><label for="qa5_7" class="radio-label-likert">7</label></div>
+                    </div>
+                    <div class="likert-labels">
+                        <span>1 (Strongly Disagree)</span>
+                        <span></span>
+                        <span></span>
+                        <span>4 (Neutral)</span>
+                        <span></span>
+                        <span></span>
+                        <span>7 (Strongly Agree)</span>
+                    </div>
+                </li>
+
+                <li class="question-item">
+                    <label class="question-label">6. I am skeptical about the agent's judgments.</label>
+                    <div class="likert-scale" id="qA6">
+                        <div class="likert-option"><input type="radio" id="qa6_1" name="trust_skeptic" value="1" required><label for="qa6_1" class="radio-label-likert">1</label></div>
+                        <div class="likert-option"><input type="radio" id="qa6_2" name="trust_skeptic" value="2"><label for="qa6_2" class="radio-label-likert">2</label></div>
+                        <div class="likert-option"><input type="radio" id="qa6_3" name="trust_skeptic" value="3"><label for="qa6_3" class="radio-label-likert">3</label></div>
+                        <div class="likert-option"><input type="radio" id="qa6_4" name="trust_skeptic" value="4"><label for="qa6_4" class="radio-label-likert">4</label></div>
+                        <div class="likert-option"><input type="radio" id="qa6_5" name="trust_skeptic" value="5"><label for="qa6_5" class="radio-label-likert">5</label></div>
+                        <div class="likert-option"><input type="radio" id="qa6_6" name="trust_skeptic" value="6"><label for="qa6_6" class="radio-label-likert">6</label></div>
+                        <div class="likert-option"><input type="radio" id="qa6_7" name="trust_skeptic" value="7"><label for="qa6_7" class="radio-label-likert">7</label></div>
+                    </div>
+                    <div class="likert-labels">
+                        <span>1 (Strongly Disagree)</span>
+                        <span></span>
+                        <span></span>
+                        <span>4 (Neutral)</span>
+                        <span></span>
+                        <span></span>
+                        <span>7 (Strongly Agree)</span>
+                    </div>
+                </li>
+
+                <h2 class="question-section-title">Section B: Perceived Empathy</h2>
+
+                <li class="question-item">
+                    <label class="question-label">7. The agent seemed to understand my feelings.</label>
+                    <div class="likert-scale" id="qB1">
+                        <div class="likert-option"><input type="radio" id="qb1_1" name="empathy_understood" value="1" required><label for="qb1_1" class="radio-label-likert">1</label></div>
+                        <div class="likert-option"><input type="radio" id="qb1_2" name="empathy_understood" value="2"><label for="qb1_2" class="radio-label-likert">2</label></div>
+                        <div class="likert-option"><input type="radio" id="qb1_3" name="empathy_understood" value="3"><label for="qb1_3" class="radio-label-likert">3</label></div>
+                        <div class="likert-option"><input type="radio" id="qb1_4" name="empathy_understood" value="4"><label for="qb1_4" class="radio-label-likert">4</label></div>
+                        <div class="likert-option"><input type="radio" id="qb1_5" name="empathy_understood" value="5"><label for="qb1_5" class="radio-label-likert">5</label></div>
+                        <div class="likert-option"><input type="radio" id="qb1_6" name="empathy_understood" value="6"><label for="qb1_6" class="radio-label-likert">6</label></div>
+                        <div class="likert-option"><input type="radio" id="qb1_7" name="empathy_understood" value="7"><label for="qb1_7" class="radio-label-likert">7</label></div>
+                    </div>
+                    <div class="likert-labels">
+                        <span>1 (Strongly Disagree)</span>
+                        <span></span>
+                        <span></span>
+                        <span>4 (Neutral)</span>
+                        <span></span>
+                        <span></span>
+                        <span>7 (Strongly Agree)</span>
+                    </div>
+                </li>
+
+                <li class="question-item">
+                    <label class="question-label">8. The agent's responses made me feel cared for.</label>
+                    <div class="likert-scale" id="qB2">
+                        <div class="likert-option"><input type="radio" id="qb2_1" name="empathy_cared" value="1" required><label for="qb2_1" class="radio-label-likert">1</label></div>
+                        <div class="likert-option"><input type="radio" id="qb2_2" name="empathy_cared" value="2"><label for="qb2_2" class="radio-label-likert">2</label></div>
+                        <div class="likert-option"><input type="radio" id="qb2_3" name="empathy_cared" value="3"><label for="qb2_3" class="radio-label-likert">3</label></div>
+                        <div class="likert-option"><input type="radio" id="qb2_4" name="empathy_cared" value="4"><label for="qb2_4" class="radio-label-likert">4</label></div>
+                        <div class="likert-option"><input type="radio" id="qb2_5" name="empathy_cared" value="5"><label for="qb2_5" class="radio-label-likert">5</label></div>
+                        <div class="likert-option"><input type="radio" id="qb2_6" name="empathy_cared" value="6"><label for="qb2_6" class="radio-label-likert">6</label></div>
+                        <div class="likert-option"><input type="radio" id="qb2_7" name="empathy_cared" value="7"><label for="qb2_7" class="radio-label-likert">7</label></div>
+                    </div>
+                    <div class="likert-labels">
+                        <span>1 (Strongly Disagree)</span>
+                        <span></span>
+                        <span></span>
+                        <span>4 (Neutral)</span>
+                        <span></span>
+                        <span></span>
+                        <span>7 (Strongly Agree)</span>
+                    </div>
+                </li>
+
+                <li class="question-item">
+                    <label class="question-label">9. The agent's replies were relevant to my emotional state.</label>
+                    <div class="likert-scale" id="qB3">
+                        <div class="likert-option"><input type="radio" id="qb3_1" name="empathy_responsive" value="1" required><label for="qb3_1" class="radio-label-likert">1</label></div>
+                        <div class="likert-option"><input type="radio" id="qb3_2" name="empathy_responsive" value="2"><label for="qb3_2" class="radio-label-likert">2</label></div>
+                        <div class="likert-option"><input type="radio" id="qb3_3" name="empathy_responsive" value="3"><label for="qb3_3" class="radio-label-likert">3</label></div>
+                        <div class="likert-option"><input type="radio" id="qb3_4" name="empathy_responsive" value="4"><label for="qb3_4" class="radio-label-likert">4</label></div>
+                        <div class="likert-option"><input type="radio" id="qb3_5" name="empathy_responsive" value="5"><label for="qb3_5" class="radio-label-likert">5</label></div>
+                        <div class="likert-option"><input type="radio" id="qb3_6" name="empathy_responsive" value="6"><label for="qb3_6" class="radio-label-likert">6</label></div>
+                        <div class="likert-option"><input type="radio" id="qb3_7" name="empathy_responsive" value="7"><label for="qb3_7" class="radio-label-likert">7</label></div>
+                    </div>
+                    <div class="likert-labels">
+                        <span>1 (Strongly Disagree)</span>
+                        <span></span>
+                        <span></span>
+                        <span>4 (Neutral)</span>
+                        <span></span>
+                        <span></span>
+                        <span>7 (Strongly Agree)</span>
+                    </div>
+                </li>
+
+                <li class="question-item">
+                    <label class="question-label">10. The agent conveyed warmth or concern.</label>
+                    <div class="likert-scale" id="qB4">
+                        <div class="likert-option"><input type="radio" id="qb4_1" name="empathy_warm" value="1" required><label for="qb4_1" class="radio-label-likert">1</label></div>
+                        <div class="likert-option"><input type="radio" id="qb4_2" name="empathy_warm" value="2"><label for="qb4_2" class="radio-label-likert">2</label></div>
+                        <div class="likert-option"><input type="radio" id="qb4_3" name="empathy_warm" value="3"><label for="qb4_3" class="radio-label-likert">3</label></div>
+                        <div class="likert-option"><input type="radio" id="qb4_4" name="empathy_warm" value="4"><label for="qb4_4" class="radio-label-likert">4</label></div>
+                        <div class="likert-option"><input type="radio" id="qb4_5" name="empathy_warm" value="5"><label for="qb4_5" class="radio-label-likert">5</label></div>
+                        <div class="likert-option"><input type="radio" id="qb4_6" name="empathy_warm" value="6"><label for="qb4_6" class="radio-label-likert">6</label></div>
+                        <div class="likert-option"><input type="radio" id="qb4_7" name="empathy_warm" value="7"><label for="qb4_7" class="radio-label-likert">7</label></div>
+                    </div>
+                    <div class="likert-labels">
+                        <span>1 (Strongly Disagree)</span>
+                        <span></span>
+                        <span></span>
+                        <span>4 (Neutral)</span>
+                        <span></span>
+                        <span></span>
+                        <span>7 (Strongly Agree)</span>
+                    </div>
+                </li>
+
+                <li class="question-item">
+                    <label class="question-label">11. I felt the agent respected my emotions and perspective.</label>
+                    <div class="likert-scale" id="qB5">
+                        <div class="likert-option"><input type="radio" id="qb5_1" name="empathy_respect" value="1" required><label for="qb5_1" class="radio-label-likert">1</label></div>
+                        <div class="likert-option"><input type="radio" id="qb5_2" name="empathy_respect" value="2"><label for="qb5_2" class="radio-label-likert">2</label></div>
+                        <div class="likert-option"><input type="radio" id="qb5_3" name="empathy_respect" value="3"><label for="qb5_3" class="radio-label-likert">3</label></div>
+                        <div class="likert-option"><input type="radio" id="qb5_4" name="empathy_respect" value="4"><label for="qb5_4" class="radio-label-likert">4</label></div>
+                        <div class="likert-option"><input type="radio" id="qb5_5" name="empathy_respect" value="5"><label for="qb5_5" class="radio-label-likert">5</label></div>
+                        <div class="likert-option"><input type="radio" id="qb5_6" name="empathy_respect" value="6"><label for="qb5_6" class="radio-label-likert">6</label></div>
+                        <div class="likert-option"><input type="radio" id="qb5_7" name="empathy_respect" value="7"><label for="qb5_7" class="radio-label-likert">7</label></div>
+                    </div>
+                    <div class="likert-labels">
+                        <span>1 (Strongly Disagree)</span>
+                        <span></span>
+                        <span></span>
+                        <span>4 (Neutral)</span>
+                        <span></span>
+                        <span></span>
+                        <span>7 (Strongly Agree)</span>
+                    </div>
+                </li>
+
+                <li class="question-item">
+                    <label class="question-label">12. The agent's empathy seemed insincere.</label>
+                    <div class="likert-scale" id="qB6">
+                        <div class="likert-option"><input type="radio" id="qb6_1" name="empathy_insincere" value="1" required><label for="qb6_1" class="radio-label-likert">1</label></div>
+                        <div class="likert-option"><input type="radio" id="qb6_2" name="empathy_insincere" value="2"><label for="qb6_2" class="radio-label-likert">2</label></div>
+                        <div class="likert-option"><input type="radio" id="qb6_3" name="empathy_insincere" value="3"><label for="qb6_3" class="radio-label-likert">3</label></div>
+                        <div class="likert-option"><input type="radio" id="qb6_4" name="empathy_insincere" value="4"><label for="qb6_4" class="radio-label-likert">4</label></div>
+                        <div class="likert-option"><input type="radio" id="qb6_5" name="empathy_insincere" value="5"><label for="qb6_5" class="radio-label-likert">5</label></div>
+                        <div class="likert-option"><input type="radio" id="qb6_6" name="empathy_insincere" value="6"><label for="qb6_6" class="radio-label-likert">6</label></div>
+                        <div class="likert-option"><input type="radio" id="qb6_7" name="empathy_insincere" value="7"><label for="qb6_7" class="radio-label-likert">7</label></div>
+                    </div>
+                    <div class="likert-labels">
+                        <span>1 (Strongly Disagree)</span>
+                        <span></span>
+                        <span></span>
+                        <span>4 (Neutral)</span>
+                        <span></span>
+                        <span></span>
+                        <span>7 (Strongly Agree)</span>
+                    </div>
+                </li>
+
+                <h2 class="question-section-title">Section C: Quality Control</h2>
+
+                <li class="question-item">
+                    <label class="question-label">13. <strong>ATTENTION CHECK:</strong> To show you are carefully reading the questions, please select "Strongly Agree" (i.e., 7) for this item.</label>
+                    <div class="likert-scale" id="qD1">
+                        <div class="likert-option"><input type="radio" id="qd1_1" name="attention_check" value="1" required><label for="qd1_1" class="radio-label-likert">1</label></div>
+                        <div class="likert-option"><input type="radio" id="qd1_2" name="attention_check" value="2"><label for="qd1_2" class="radio-label-likert">2</label></div>
+                        <div class="likert-option"><input type="radio" id="qd1_3" name="attention_check" value="3"><label for="qd1_3" class="radio-label-likert">3</label></div>
+                        <div class="likert-option"><input type="radio" id="qd1_4" name="attention_check" value="4"><label for="qd1_4" class="radio-label-likert">4</label></div>
+                        <div class="likert-option"><input type="radio" id="qd1_5" name="attention_check" value="5"><label for="qd1_5" class="radio-label-likert">5</label></div>
+                        <div class="likert-option"><input type="radio" id="qd1_6" name="attention_check" value="6"><label for="qd1_6" class="radio-label-likert">6</label></div>
+                        <div class="likert-option"><input type="radio" id="qd1_7" name="attention_check" value="7"><label for="qd1_7" class="radio-label-likert">7</label></div>
+                    </div>
+                    <div class="likert-labels">
+                        <span>1 (Strongly Disagree)</span>
+                        <span></span>
+                        <span></span>
+                        <span>4 (Neutral)</span>
+                        <span></span>
+                        <span></span>
+                        <span>7 (Strongly Agree)</span>
+                    </div>
+                </li>
+
+                <li class="question-item">
+                    <label class="question-label">14. Did the system display explanations (e.g., highlighted your text and explained why it judged a certain emotion) during the conversation?</label>
+                    <div class="likert-scale" id="mc">
+                        <div><input type="radio" id="mc_yes" name="manip_check_expl" value="1" required><label for="mc_yes">1 = Yes, I saw explanations</label></div>
+                        <div><input type="radio" id="mc_no" name="manip_check_expl" value="2"><label for="mc_no">2 = No, I did not see explanations</label></div>
+                        <div><input type="radio" id="mc_not_sure" name="manip_check_expl" value="3"><label for="mc_not_sure">3 = Not sure / Didn't pay attention</label></div>
+                    </div>
+                </li>
+
+                <h2 class="question-section-title">Section D: Explanation Feedback (XAI)</h2>
+
+                <li class="question-item">
+                    <label class="question-label">15. The explanation provided by the agent was useful.</label>
+                    <div class="likert-scale" id="qC1">
+                        <div class="likert-option"><input type="radio" id="qc1_1" name="expl_useful" value="1" required><label for="qc1_1" class="radio-label-likert">1</label></div>
+                        <div class="likert-option"><input type="radio" id="qc1_2" name="expl_useful" value="2"><label for="qc1_2" class="radio-label-likert">2</label></div>
+                        <div class="likert-option"><input type="radio" id="qc1_3" name="expl_useful" value="3"><label for="qc1_3" class="radio-label-likert">3</label></div>
+                        <div class="likert-option"><input type="radio" id="qc1_4" name="expl_useful" value="4"><label for="qc1_4" class="radio-label-likert">4</label></div>
+                        <div class="likert-option"><input type="radio" id="qc1_5" name="expl_useful" value="5"><label for="qc1_5" class="radio-label-likert">5</label></div>
+                        <div class="likert-option"><input type="radio" id="qc1_6" name="expl_useful" value="6"><label for="qc1_6" class="radio-label-likert">6</label></div>
+                        <div class="likert-option"><input type="radio" id="qc1_7" name="expl_useful" value="7"><label for="qc1_7" class="radio-label-likert">7</label></div>
+                    </div>
+                    <div class="likert-labels">
+                        <span>1 (Strongly Disagree)</span>
+                        <span></span>
+                        <span></span>
+                        <span>4 (Neutral)</span>
+                        <span></span>
+                        <span></span>
+                        <span>7 (Strongly Agree)</span>
+                    </div>
+                </li>
+
+                <li class="question-item">
+                    <label class="question-label">16. The explanation was clear and easy to understand.</label>
+                    <div class="likert-scale" id="qC2">
+                        <div class="likert-option"><input type="radio" id="qc2_1" name="expl_clear" value="1" required><label for="qc2_1" class="radio-label-likert">1</label></div>
+                        <div class="likert-option"><input type="radio" id="qc2_2" name="expl_clear" value="2"><label for="qc2_2" class="radio-label-likert">2</label></div>
+                        <div class="likert-option"><input type="radio" id="qc2_3" name="expl_clear" value="3"><label for="qc2_3" class="radio-label-likert">3</label></div>
+                        <div class="likert-option"><input type="radio" id="qc2_4" name="expl_clear" value="4"><label for="qc2_4" class="radio-label-likert">4</label></div>
+                        <div class="likert-option"><input type="radio" id="qc2_5" name="expl_clear" value="5"><label for="qc2_5" class="radio-label-likert">5</label></div>
+                        <div class="likert-option"><input type="radio" id="qc2_6" name="expl_clear" value="6"><label for="qc2_6" class="radio-label-likert">6</label></div>
+                        <div class="likert-option"><input type="radio" id="qc2_7" name="expl_clear" value="7"><label for="qc2_7" class="radio-label-likert">7</label></div>
+                    </div>
+                    <div class="likert-labels">
+                        <span>1 (Strongly Disagree)</span>
+                        <span></span>
+                        <span></span>
+                        <span>4 (Neutral)</span>
+                        <span></span>
+                        <span></span>
+                        <span>7 (Strongly Agree)</span>
+                    </div>
+                </li>
+
+                <li class="question-item">
+                    <label class="question-label">17. The amount of explanation was appropriate (not too little/too much).</label>
+                    <div class="likert-scale" id="qC3">
+                        <div class="likert-option"><input type="radio" id="qc3_1" name="expl_sufficient" value="1" required><label for="qc3_1" class="radio-label-likert">1</label></div>
+                        <div class="likert-option"><input type="radio" id="qc3_2" name="expl_sufficient" value="2"><label for="qc3_2" class="radio-label-likert">2</label></div>
+                        <div class="likert-option"><input type="radio" id="qc3_3" name="expl_sufficient" value="3"><label for="qc3_3" class="radio-label-likert">3</label></div>
+                        <div class="likert-option"><input type="radio" id="qc3_4" name="expl_sufficient" value="4"><label for="qc3_4" class="radio-label-likert">4</label></div>
+                        <div class="likert-option"><input type="radio" id="qc3_5" name="expl_sufficient" value="5"><label for="qc3_5" class="radio-label-likert">5</label></div>
+                        <div class="likert-option"><input type="radio" id="qc3_6" name="expl_sufficient" value="6"><label for="qc3_6" class="radio-label-likert">6</label></div>
+                        <div class="likert-option"><input type="radio" id="qc3_7" name="expl_sufficient" value="7"><label for="qc3_7" class="radio-label-likert">7</label></div>
+                    </div>
+                    <div class="likert-labels">
+                        <span>1 (Strongly Disagree)</span>
+                        <span></span>
+                        <span></span>
+                        <span>4 (Neutral)</span>
+                        <span></span>
+                        <span></span>
+                        <span>7 (Strongly Agree)</span>
+                    </div>
+                </li>
+
+                <li class="question-item">
+                    <label class="question-label">18. The explanation made it easier for me to trust the agent's judgment.</label>
+                    <div class="likert-scale" id="qC4">
+                        <div class="likert-option"><input type="radio" id="qc4_1" name="expl_trusthelp" value="1" required><label for="qc4_1" class="radio-label-likert">1</label></div>
+                        <div class="likert-option"><input type="radio" id="qc4_2" name="expl_trusthelp" value="2"><label for="qc4_2" class="radio-label-likert">2</label></div>
+                        <div class="likert-option"><input type="radio" id="qc4_3" name="expl_trusthelp" value="3"><label for="qc4_3" class="radio-label-likert">3</label></div>
+                        <div class="likert-option"><input type="radio" id="qc4_4" name="expl_trusthelp" value="4"><label for="qc4_4" class="radio-label-likert">4</label></div>
+                        <div class="likert-option"><input type="radio" id="qc4_5" name="expl_trusthelp" value="5"><label for="qc4_5" class="radio-label-likert">5</label></div>
+                        <div class="likert-option"><input type="radio" id="qc4_6" name="expl_trusthelp" value="6"><label for="qc4_6" class="radio-label-likert">6</label></div>
+                        <div class="likert-option"><input type="radio" id="qc4_7" name="expl_trusthelp" value="7"><label for="qc4_7" class="radio-label-likert">7</label></div>
+                    </div>
+                    <div class="likert-labels">
+                        <span>1 (Strongly Disagree)</span>
+                        <span></span>
+                        <span></span>
+                        <span>4 (Neutral)</span>
+                        <span></span>
+                        <span></span>
+                        <span>7 (Strongly Agree)</span>
+                    </div>
+                </li>
+
+            </ul>
+
+            <button type="submit" id="submit-btn" class="btn-submit">Continue to Open-Ended Questions</button>
+            <p id="error-message" class="error-message" style="display: none;"></p>
+        </form>
+    </div>
+</div>
+
+<script>
+    // 流程控制索引：POST_QUESTIONNAIRE 在 EXPERIMENT_STEPS 数组中的索引是 4
+    const CURRENT_STEP_INDEX = 4;
+    const CURRENT_STEP_NAME = "POST_QUESTIONNAIRE";
+
+    const form = document.getElementById('post-questionnaire-form');
+    const submitButton = document.getElementById('submit-btn');
+    const errorMessage = document.getElementById('error-message');
+
+    // 确保从 Session Storage 中获取 participant_id
+    const participantId = sessionStorage.getItem('participant_id');
+
+    // Expected total questions: 6 (Trust) + 6 (Empathy) + 1 (Attention) + 1 (Manipulation) + 4 (XAI) = 18
+    const expectedQuestions = 18;
+
+    if (!participantId) {
+        errorMessage.textContent = "Error: Participant ID missing. Please start over.";
+        errorMessage.style.display = 'block';
+        submitButton.disabled = true;
+        setTimeout(() => {
+            window.location.href = '/html/admin_setup.html';
+        }, 3000);
+    }
+
+    form.addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const formData = new FormData(form);
+        const data = {};
+
+        // 客户端验证：检查是否所有问题都被回答
+        let answeredQuestions = 0;
+
+        // 将 FormData 转换为 JSON 对象，并将值转换为整数
+        formData.forEach((value, key) => {
+            // 只有 Likert 量表题需要转换为整数
+            if (key !== 'manip_check_expl') {
+                 data[key] = parseInt(value);
+            } else {
+                 // Manipulation check 题为字符串（1, 2, 3）
+                 data[key] = value;
+            }
+            answeredQuestions++;
+        });
+
+        // 由于浏览器会自动处理 required 属性，这里只需检查总数是否匹配
+        if (answeredQuestions !== expectedQuestions) {
+            errorMessage.textContent = "Please answer all questions before continuing.";
+            errorMessage.style.display = 'block';
+
+            // 可选：为了用户体验，可以滚动到第一个未回答的问题
+            // 简单实现是检查所有的 radio group
+            return;
+        }
+
+        submitButton.disabled = true;
+        submitButton.textContent = 'Saving Data...';
+        errorMessage.style.display = 'none';
+
+        // 1. 调用后端路由保存数据并获取下一个 URL
+        fetch('http://127.0.0.1:5000/save_data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                participant_id: participantId,
+                step_name: CURRENT_STEP_NAME,
+                data: data,
+                current_step_index: CURRENT_STEP_INDEX + 1 // 下一个步骤的索引是 5 (OPEN_ENDED_QS)
+            })
+        })
+        .then(response => response.json())
+        .then(apiData => {
+            if (apiData.success) {
+                // 2. 跳转到下一个页面 (Open-Ended Questions)
+                window.location.href = apiData.next_url;
+            } else {
+                throw new Error(apiData.error || 'Unknown error during data save.');
+            }
+        })
+        .catch(error => {
+            console.error('Data save error:', error);
+            errorMessage.textContent = `Error: ${error.message}`;
+            errorMessage.style.display = 'block';
+            submitButton.disabled = false;
+            submitButton.textContent = 'Continue to Open-Ended Questions';
+        });
+    });
+</script>
+
+</body>
+</html>
