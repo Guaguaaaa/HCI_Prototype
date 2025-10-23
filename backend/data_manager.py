@@ -4,12 +4,14 @@ import time
 from backend.config import DATA_DIR, VERSION_MAP
 
 
+# (create_data_dir 保持不变)
 def create_data_dir():
     """确保数据目录存在"""
     os.makedirs(DATA_DIR, exist_ok=True)
     print(f"✅ Data directory ensured: {DATA_DIR}")
 
 
+# (get_participant_status 保持不变)
 def get_participant_status(participant_id: str) -> dict:
     """从状态文件中获取受试者的实验条件和其他状态信息"""
     status_path = os.path.join(DATA_DIR, f"P_{participant_id}_status.json")
@@ -23,13 +25,14 @@ def get_participant_status(participant_id: str) -> dict:
         return {}
 
 
+# (get_participant_condition 保持不变)
 def get_participant_condition(participant_id: str) -> str:
     """获取受试者的实验条件 (XAI/NON_XAI)"""
     status = get_participant_status(participant_id)
     return status.get("condition", "UNKNOWN")  # Default to UNKNOWN if not set
 
 
-# 获取受试者的语言
+# (get_participant_language 保持不变)
 def get_participant_language(participant_id: str) -> str:
     """获取受试者的实验语言 (en/zh-CN)"""
     status = get_participant_status(participant_id)
@@ -37,6 +40,7 @@ def get_participant_language(participant_id: str) -> str:
     return status.get("language", "en")
 
 
+# (save_participant_data 保持不变)
 def save_participant_data(participant_id: str, step_name: str, data: dict):
     """
     通用数据保存函数：将一个步骤数据（如问卷、初始化）以 JSON Line 格式追加写入。
@@ -78,7 +82,8 @@ def init_participant_session(participant_id: str, condition: str, language: str)
         "condition": condition.upper(),
         "language": language,
         "start_time": time.time(),
-        "version_url": VERSION_MAP[condition.upper()]
+        "version_url": VERSION_MAP[condition.upper()],
+        "current_step_index": 0  # <--- 新增：步骤 0 (DEMOGRAPHICS) 是下一步
     }
     save_participant_data(participant_id, "INIT", init_data)
 
@@ -93,6 +98,34 @@ def init_participant_session(participant_id: str, condition: str, language: str)
     return "/html/demographics.html"
 
 
+# --- 新增函数 ---
+def update_participant_step(participant_id: str, new_step_index: int):
+    """
+    更新受试者的状态文件，记录他们当前所在的步骤索引。
+    """
+    status_path = os.path.join(DATA_DIR, f"P_{participant_id}_status.json")
+    try:
+        # 1. 读取现有状态
+        status_data = get_participant_status(participant_id)
+        if not status_data:
+            print(f"❌ CRITICAL ERROR: Status file missing for PID {participant_id}. Cannot update step.")
+            return False
+
+        # 2. 更新步骤索引
+        status_data["current_step_index"] = new_step_index
+
+        # 3. 写回文件
+        with open(status_path, 'w', encoding='utf-8') as f:
+            json.dump(status_data, f, ensure_ascii=False, indent=4)
+
+        print(f"✅ PID {participant_id} advanced to step index {new_step_index}")
+        return True
+    except Exception as e:
+        print(f"❌ Failed to update participant step: {e}")
+        return False
+
+
+# (save_turn_data 保持不变)
 def save_turn_data(participant_id: str, turn_data: dict):
     """
     将一轮对话的分析数据以 JSON Line 格式追加写入其专属文件。

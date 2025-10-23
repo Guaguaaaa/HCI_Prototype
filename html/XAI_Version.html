@@ -219,24 +219,33 @@
         }
 
         .end-dialogue-container {
+            /* NEW: 使用 flex 居中按钮 */
+            display: flex;
+            justify-content: center;
             padding: 5px 0 10px 0;
         }
 
         .end-dialogue-button {
-            width: 100%;
-            padding: 10px;
-            background-color: #e74c3c; /* 红色按钮 */
-            color: white;
-            border: none;
-            border-radius: 4px;
+            /* MODIFIED: 移除 100% 宽度，使用内边距定义大小 */
+            width: auto;
+            padding: 8px 20px;
+
+            /* MODIFIED: 改为轮廓样式 */
+            background-color: #ffffff; /* 透明背景 */
+            color: #e74c3c; /* 红色文字 */
+            border: 1px solid #e74c3c; /* 红色边框 */
+
+            border-radius: 20px; /* 改为圆角以匹配输入框 */
             cursor: pointer;
-            font-size: 0.95rem;
+            font-size: 0.9rem; /* 稍微缩小字体 */
             font-weight: 600;
-            transition: background-color 0.2s;
+            transition: all 0.2s ease-in-out; /* 平滑过渡 */
         }
 
         .end-dialogue-button:hover {
-            background-color: #c0392b;
+            /* MODIFIED: 悬停时反转颜色 */
+            background-color: #e74c3c;
+            color: white;
         }
 
         /* Modal Styles */

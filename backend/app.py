@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, Response, send_from_directory, render_template_string
+from flask import Flask, request, jsonify, Response, send_from_directory, render_template_string, redirect
 from flask_cors import CORS
 import os
 import json
@@ -20,7 +20,7 @@ CORS(app)
 data_manager.create_data_dir()
 
 
-# --- 辅助函数：计算简单文本指标 ---
+# (calculate_text_metrics 保持不变)
 def calculate_text_metrics(text: str) -> dict:
     """计算字符数、词数和模拟的 token 数"""
     text = text.strip()
@@ -36,7 +36,7 @@ def calculate_text_metrics(text: str) -> dict:
     }
 
 
-# --- Jinja2 渲染辅助函数 ---
+# (render_template_page 保持不变)
 def render_template_page(template_file_name: str, module_name: str, participant_id: str):
     """
     根据受试者ID从状态中获取语言，然后用正确的本地化文本渲染 HTML 模板。
@@ -75,7 +75,7 @@ def root():
     # index.html 位于项目根目录
     return send_from_directory(app.static_folder, 'index.html')
 
-@app.route('/index.html')
+
 @app.route('/index.html')
 def serve_index():
     """
@@ -87,17 +87,51 @@ def serve_index():
         # 如果没有 PID，返回原始静态文件，让前端 JS 处理重定向到 admin_setup
         return send_from_directory(app.static_folder, 'index.html')
 
-    # 如果有 PID，尝试渲染（Consent Page 的本地化模块名为 "consent"）
-    # 使用 PID 来获取正确的语言
+    # --- 新增：验证 index.html (Consent) 步骤 ---
+    # Consent 页面比较特殊，它没有在 EXPERIMENT_STEPS 列表中，
+    # 但我们只应在受试者刚初始化 (step 0) 时允许访问。
+    status = data_manager.get_participant_status(participant_id)
+    expected_index = status.get("current_step_index", 0)  # 默认为 0
+
+    if expected_index != 0:
+        # 如果他们已经不在第0步（例如，在第3步），则不应再看到知情同意
+        # 我们将他们重定向到他们 *应该* 在的页面
+        expected_step_key = EXPERIMENT_STEPS[expected_index]
+        # (复制下面的重定向逻辑)
+        if expected_step_key == "INSTRUCTIONS":
+            condition = status.get("condition", "NON_XAI")
+            expected_url = INSTRUCTION_VERSION_MAP.get(condition)
+        elif expected_step_key == "DIALOGUE":
+            condition = status.get("condition", "NON_XAI")
+            expected_url = VERSION_MAP.get(condition)
+        else:
+            expected_url = f"/html/{expected_step_key.lower()}.html"
+
+        print(
+            f"⚠️ Access Violation: PID {participant_id} requested Consent page but is on step {expected_index}. Redirecting.")
+        return redirect(f"{expected_url}?pid={participant_id}")
+
+    # 如果 expected_index == 0，正常渲染 Consent 页面
     return render_template_page('index.html', 'consent', participant_id)
 
 
-# 确保 html 目录下的所有文件可以被访问 (现在用于渲染模板)
+# --- 修改：serve_html（核心安全更新）---
 @app.route('/html/<path:filename>')
 def serve_html(filename):
     """
-    服务 html 目录下的静态文件，对实验流程页面进行 Jinja2 渲染。
+    服务 html 目录下的静态文件，并对实验流程页面进行Jinja2渲染和状态验证。
     """
+
+    # 1. --- 阻止参与者访问 Admin 页面 ---
+    if "admin_setup.html" in filename:
+        participant_id = request.args.get('pid', None)
+        if participant_id:
+            # 如果一个URL带有PID，说明是参与者，绝对禁止访问admin页面
+            print(f"🚫 Access Denied: Participant {participant_id} tried to access admin_setup.html")
+            return "Access Denied: Participants cannot access this page.", 403
+
+        # 如果没有PID，假定是实验者，正常提供页面
+        return send_from_directory(os.path.join(app.static_folder, 'html'), filename)
 
     # 流程页面映射表 (key: 文件名, value: localization.py 中的模块名)
     PAGE_MAPPING = {
@@ -105,42 +139,93 @@ def serve_html(filename):
         "baseline_mood.html": "baseline_mood",
         "instructions_xai.html": "instructions",
         "instructions_non_xai.html": "instructions",
+        "XAI_Version.html": "chat_interface",
+        "non-XAI_version.html": "chat_interface",
         "post_questionnaire.html": "post_questionnaire",
         "open_ended_qs.html": "open_ended_qs",
         "debrief.html": "debrief",
-        "XAI_Version.html": "chat_interface",
-        "non-XAI_version.html": "chat_interface",
     }
 
     module_name = PAGE_MAPPING.get(filename)
 
     if module_name:
-        # 从 URL 参数中获取 PID，这是唯一的可靠方式
-        participant_id = request.args.get('pid', 'DEFAULT')
+        # --- 这是一个受控的实验流程页面 ---
+        participant_id = request.args.get('pid', None)
 
-        # 渲染流程页面
-        return render_template_page(filename, module_name, participant_id)
+        if not participant_id:
+            # 如果没有PID就试图访问流程页面，踢回到admin设置
+            print(f"🚫 Access Denied: Attempted to access {filename} without PID.")
+            return redirect('/html/admin_setup.html')
 
-    # 非流程页面 (admin_setup, assets) 仍作为静态文件服务
-    # (聊天界面现在已在 MAPPING 中，不再作为静态文件服务)
-    return send_from_directory(os.path.join(app.static_folder, 'html'), filename)
+        # 2. --- 核心：状态验证逻辑 ---
+        try:
+            # (a) 获取受试者 *应该* 在的步骤索引
+            status = data_manager.get_participant_status(participant_id)
+            # 默认为 7 (DEBRIEF)，即实验的最后一步
+            expected_index = status.get("current_step_index", len(EXPERIMENT_STEPS) - 1)
 
-# 确保 assets 目录下的所有文件可以被访问
+            # (b) 获取受试者 *请求* 的步骤索引
+            # 将 "demographics.html" -> "DEMOGRAPHICS"
+            requested_step_key = filename.replace(".html", "").upper()
+
+            # 处理特殊的 instruction 和 dialogue 页面
+            if requested_step_key == "INSTRUCTIONS_XAI" or requested_step_key == "INSTRUCTIONS_NON_XAI":
+                requested_step_key = "INSTRUCTIONS"
+            if requested_step_key == "XAI_VERSION" or requested_step_key == "NON-XAI_VERSION":
+                requested_step_key = "DIALOGUE"
+
+            if requested_step_key in EXPERIMENT_STEPS:
+                requested_index = EXPERIMENT_STEPS.index(requested_step_key)
+            else:
+                raise ValueError(f"Page {filename} not in EXPERIMENT_STEPS")
+
+            # (c) 比较并执行
+            if requested_index != expected_index:
+                # --- 访问冲突！(试图后退或跳跃) ---
+                # 找出他们 *应该* 在的页面的正确 URL
+                expected_step_key = EXPERIMENT_STEPS[expected_index]
+
+                if expected_step_key == "INSTRUCTIONS":
+                    condition = status.get("condition", "NON_XAI")
+                    expected_url = INSTRUCTION_VERSION_MAP.get(condition)
+                elif expected_step_key == "DIALOGUE":
+                    condition = status.get("condition", "NON_XAI")
+                    expected_url = VERSION_MAP.get(condition)
+                else:
+                    expected_url = f"/html/{expected_step_key.lower()}.html"
+
+                print(
+                    f"⚠️ Access Violation: PID {participant_id} requested step {requested_index} ({filename}) but is on step {expected_index}. Redirecting to {expected_url}")
+
+                # 强制重定向到他们应该在的页面
+                return redirect(f"{expected_url}?pid={participant_id}")
+
+            # (d) 验证通过 (requested_index == expected_index)，正常渲染页面
+            return render_template_page(filename, module_name, participant_id)
+
+        except Exception as e:
+            print(f"Error during step validation for {participant_id} on {filename}: {e}")
+            return "An error occurred during state validation.", 500
+
+    # 非流程页面 (e.g., assets) 仍作为静态文件服务
+    return send_from_directory(os.path.join(app.static_folder, 'assets'), filename)
+
+
+# (serve_assets 保持不变)
 @app.route('/assets/<path:filename>')
 def serve_assets(filename):
     """服务 assets 目录下的静态文件"""
     return send_from_directory(os.path.join(app.static_folder, 'assets'), filename)
 
 
-# --- 实验初始化路由 ---
-
+# (start_experiment 保持不变, 它调用的 init_participant_session 已被修改)
 @app.route('/start_experiment', methods=['POST'])
 def start_experiment():
     """
     实验初始化路由：
     1. 接收 PID, Condition (XAI/NON_XAI) 和 Language (en/zh-CN)。
     2. 清除旧的 LLM 会话。
-    3. 初始化会话状态并保存到数据文件。
+    3. 初始化会话状态并保存到数据文件。 (现在会设置 step_index = 0)
     4. 返回 Consent 页面 URL。
     """
     try:
@@ -154,8 +239,7 @@ def start_experiment():
 
         llm_service.clear_session(participant_id)
 
-        # 初始化数据 (这也会写入 INIT 记录, 包含语言)
-        # 假设您已在 data_manager.py 中添加 language 参数
+        # 初始化数据 (这也会写入 INIT 记录, 包含语言, 并设置 current_step_index = 0)
         data_manager.init_participant_session(participant_id, condition, language)
 
         # 返回 Consent 页面 URL (携带 PID)
@@ -168,19 +252,18 @@ def start_experiment():
         return jsonify({"error": f"Internal server error: {e}"}), 500
 
 
-# --- 通用数据保存与流程控制路由 ---
-
+# --- 修改：save_data (添加步骤推进) ---
 @app.route('/save_data', methods=['POST'])
 def save_data():
     """
-    通用数据保存路由：用于保存问卷、情绪、知情同意等数据并进行流程控制。
+    通用数据保存路由：保存数据，推进状态，并返回下一步URL。
     """
     try:
         data = request.json
         participant_id = data.get("participant_id")
         step_name = data.get("step_name")
         step_data = data.get("data")
-        current_step_index = data.get("current_step_index")
+        current_step_index = data.get("current_step_index")  # 这是刚刚 *完成* 的步骤
 
         if not participant_id or not step_name or step_data is None or current_step_index is None:
             return jsonify({"error": "Missing required fields"}), 400
@@ -188,33 +271,35 @@ def save_data():
         # 1. 保存当前步骤的数据
         data_manager.save_participant_data(participant_id, step_name, step_data)
 
-        # 2. 确定下一个页面的 URL (流程控制)
-        next_step_index = current_step_index
+        # 2. 确定下一个步骤的索引
+        next_step_index = current_step_index + 1
 
+        # 3. --- 新增：更新状态文件，推进受试者到下一步 ---
+        data_manager.update_participant_step(participant_id, next_step_index)
+
+        # 4. 确定下一个页面的 URL
         if next_step_index >= len(EXPERIMENT_STEPS):
             next_url = "/html/debrief.html"
         else:
             next_step_key = EXPERIMENT_STEPS[next_step_index]
 
-            # --- 关键逻辑：Instructions 页面版本选择 ---
+            # (选择 instruction/dialogue 页面的逻辑不变)
             if next_step_key == "INSTRUCTIONS":
                 status = data_manager.get_participant_status(participant_id)
                 condition = status.get("condition", "NON_XAI")
                 next_url = INSTRUCTION_VERSION_MAP.get(condition, INSTRUCTION_VERSION_MAP["NON_XAI"])
-            # --- 关键逻辑：DIALOGUE 页面版本选择 ---
             elif next_step_key == "DIALOGUE":
                 status = data_manager.get_participant_status(participant_id)
                 condition = status.get("condition", "NON_XAI")
                 next_url = VERSION_MAP.get(condition, VERSION_MAP["NON_XAI"])
-            # --- 其他页面 ---
             else:
                 next_url = f"/html/{next_step_key.lower()}.html"
 
-        # 3. 返回下一个页面的 URL (FIX: 确保携带 PID)
+        # 5. 返回下一个页面的 URL (携带 PID)
         return jsonify({
             "success": True,
             "next_url": f"{next_url}?pid={participant_id}",
-            "next_step_index": current_step_index + 1
+            "next_step_index": next_step_index  # (前端JS可能会使用这个，保留)
         })
 
     except Exception as e:
@@ -222,8 +307,7 @@ def save_data():
         return jsonify({"error": f"Internal server error: {e}"}), 500
 
 
-# --- 聊天交互路由 (核心修改：只记录指标) ---
-
+# (chat 路由保持不变)
 @app.route('/chat', methods=['POST'])
 def chat():
     user_input = request.json.get("message", "")
@@ -261,22 +345,17 @@ def chat():
                 "user_id": participant_id,
                 "condition": condition,
                 "turn": current_turn,
-
-                # 用户指标 (情感占位符)
+                # ... (所有指标) ...
                 "user_sentiment_score": None,
                 "user_sentiment_label": None,
                 "user_input_length_token": user_metrics["length_token"],
                 "user_input_length_char": user_metrics["length_char"],
                 "user_input_length_word": user_metrics["length_word"],
-
-                # Agent 指标 (情感占位符)
                 "agent_sentiment_score": None,
                 "agent_sentiment_label": None,
                 "agent_response_length_token": agent_metrics["length_token"],
                 "agent_response_length_char": agent_metrics["length_char"],
                 "agent_response_length_word": agent_metrics["length_word"],
-
-                # XAI 状态
                 "explanation_shown": explanation_shown if condition == "XAI" else False
             }
 
@@ -286,13 +365,14 @@ def chat():
     return Response(generate_stream_and_log(), mimetype='text/plain')
 
 
-# --- (已修改) /end_dialogue 路由 ---
+# --- 修改：end_dialogue (添加步骤推进) ---
 @app.route('/end_dialogue', methods=['POST'])
 def end_dialogue():
     """
     终止对话会话：
-    1. 记录结束时间、总轮数和情绪波动占位符。
-    2. 转换到下一个实验步骤 (POST_QUESTIONNAIRE)。
+    1. 记录结束时间、总轮数等。
+    2. 推进状态到下一步 (POST_QUESTIONNAIRE)。
+    3. 转换到下一个实验步骤 URL。
     """
     try:
         data = request.json
@@ -301,45 +381,47 @@ def end_dialogue():
         if not participant_id:
             return jsonify({"error": "Missing participant_id"}), 400
 
-        # --- 新增：获取 LLM 会话数据 ---
         session = llm_service.get_session(participant_id)
 
         # 1. 记录对话结束状态和指标
         DIALOGUE_STEP_INDEX = 3  # "DIALOGUE" 在 EXPERIMENT_STEPS 中的索引
 
-        # --- 修改：添加 total_turns 和 emotion_fluctuation 占位符 ---
         dialogue_end_data = {
             "status": "Completed by user",
             "end_time": time.time(),
             "total_turns": session['turn_count'],
-            "emotion_fluctuation": None  # 为未来的情感分析模型预留的占位符
+            "emotion_fluctuation": None
         }
 
         data_manager.save_participant_data(participant_id, "DIALOGUE_END", dialogue_end_data)
 
-        # 2. 确定下一个步骤的 URL (POST_QUESTIONNAIRE)
-        next_step_index = DIALOGUE_STEP_INDEX + 1
+        # 2. 确定下一个步骤的索引
+        next_step_index = DIALOGUE_STEP_INDEX + 1  # 应该是 4 (POST_QUESTIONNAIRE)
 
+        # 3. --- 新增：更新状态文件，推进受试者到下一步 ---
+        data_manager.update_participant_step(participant_id, next_step_index)
+
+        # 4. 确定下一个步骤的 URL
         if next_step_index >= len(EXPERIMENT_STEPS):
             next_url = "/html/debrief.html"
         else:
             next_step_key = EXPERIMENT_STEPS[next_step_index]  # 此时为 POST_QUESTIONNAIRE
             next_url = f"/html/{next_step_key.lower()}.html"
 
-        # 3. 返回下一个页面的 URL (修复：确保携带 PID)
+        # 5. 返回下一个页面的 URL
         return jsonify({
             "success": True,
-            "next_url": f"{next_url}?pid={participant_id}",  # <--- 这一行是关键修复
+            "next_url": f"{next_url}?pid={participant_id}",
             "next_step_index": next_step_index
         })
 
     except Exception as e:
         print(f"Error in /end_dialogue: {e}")
-        # 确保返回一个 JSON 错误响应，而不是让 Flask 默认返回 500 HTML
         return jsonify(
             {"error": "Internal server error during dialogue termination. Please contact the experimenter."}), 500
 
 
+# (save_contact 和 save_contact_to_separate_file 保持不变)
 CONTACT_FILE = os.path.join(data_manager.DATA_DIR, "follow_up_contacts.csv")
 
 
@@ -355,11 +437,8 @@ def save_contact_to_separate_file(participant_id: str, email: str):
     try:
         with open(CONTACT_FILE, 'a', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
-            # 如果文件不存在，则写入标题行
             if not file_exists:
                 writer.writerow(header)
-
-            # 写入数据行
             writer.writerow(data)
 
         print(f"✅ Contact data saved separately for PID {participant_id}")
@@ -392,14 +471,11 @@ def save_contact():
         return jsonify({"error": "Internal server error during contact save."}), 500
 
 
-# --- 运行 Flask 服务器 ---
+# (运行 Flask 服务器的 main 保持不变)
 if __name__ == "__main__":
     print("🚀 Starting Flask server on http://127.0.0.1:5000")
     print(f"💾 Data will be saved to: {data_manager.DATA_DIR}")
 
-    # 关键修改：
-    # 1. 设置 threaded=False, processes=1 确保单进程稳定运行
-    # 2. 禁用 reloader，防止文件变化导致意外重启
     app.run(debug=False, port=5000, threaded=False, processes=1, use_reloader=False)
 
     # run on "http://127.0.0.1:5000/html/admin_setup.html"
