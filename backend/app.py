@@ -44,7 +44,7 @@ def render_template_page(template_file_name: str, module_name: str, participant_
     # 1. 获取语言 (如果 PID 未初始化，会返回默认 'en')
     language = data_manager.get_participant_language(participant_id)
 
-    print(f"DEBUG: Rendering {template_file_name} for PID {participant_id} in language: {language}")
+    # print(f"DEBUG: Rendering {template_file_name} for PID {participant_id} in language: {language}")
 
     # 2. 获取本地化文本字典
     strings = get_localization_for_page(module_name, language)
@@ -303,14 +303,14 @@ def end_dialogue():
         session = llm_service.get_session(participant_id)
 
         # 1. 记录对话结束状态和指标
-        DIALOGUE_STEP_INDEX = 3 # "DIALOGUE" 在 EXPERIMENT_STEPS 中的索引
+        DIALOGUE_STEP_INDEX = 3  # "DIALOGUE" 在 EXPERIMENT_STEPS 中的索引
 
         # --- 修改：添加 total_turns 和 emotion_fluctuation 占位符 ---
         dialogue_end_data = {
             "status": "Completed by user",
             "end_time": time.time(),
             "total_turns": session['turn_count'],
-            "emotion_fluctuation": None # 为未来的情感分析模型预留的占位符
+            "emotion_fluctuation": None  # 为未来的情感分析模型预留的占位符
         }
 
         data_manager.save_participant_data(participant_id, "DIALOGUE_END", dialogue_end_data)
@@ -324,10 +324,10 @@ def end_dialogue():
             next_step_key = EXPERIMENT_STEPS[next_step_index]  # 此时为 POST_QUESTIONNAIRE
             next_url = f"/html/{next_step_key.lower()}.html"
 
-        # 3. 返回下一个页面的 URL
+        # 3. 返回下一个页面的 URL (修复：确保携带 PID)
         return jsonify({
             "success": True,
-            "next_url": next_url,
+            "next_url": f"{next_url}?pid={participant_id}",  # <--- 这一行是关键修复
             "next_step_index": next_step_index
         })
 

@@ -343,10 +343,10 @@ LOCALIZATION_STRINGS = {
         },
         "zh-CN": {
             "title": "实验已完成！",
-            "thank_you": "非常感谢您的宝贵时间以及对本研究的深思熟虑的参与。您的贡献对于我们在**人机交互 (HCI)** 领域的工作具有极高的价值。",
+            "thank_you": "非常感谢您的宝贵时间以及对本研究的深思熟虑的参与。您的贡献对于我们在<strong>人机交互 (HCI)</strong> 领域的工作具有极高的价值。",
             "purpose_title": "研究目的揭示",
-            "purpose_1": "本研究的主要目的是比较 **提供（或不提供）AI 生成的情感判断解释** 如何影响用户对情感支持对话 Agent 的**信任 (Trust)** 和**感知到的共情 (Perceived Empathy)**。",
-            "purpose_2": "您被随机分配到 **XAI 条件**（带有解释）或 **非 XAI 条件**（不带解释）。您的反馈有助于我们确定透明度是否能改善 AI 支持系统的用户体验。",
+            "purpose_1": "本研究的主要目的是比较 <strong>提供（或不提供）AI 生成的情感判断解释</strong> 如何影响用户对情感支持对话 Agent 的<strong>信任 (Trust)</strong> 和<strong>感知到的共情 (Perceived Empathy)</strong>。",
+            "purpose_2": "您被随机分配到 <strong>XAI 条件</strong>（带有解释）或 <strong>非 XAI 条件</strong>（不带解释）。您的反馈有助于我们确定透明度是否能改善 AI 支持系统的用户体验。",
             "safety_title": "心理健康安全资源",
             "safety_warning_h3": "⚠️ 重要提示：如果您感到不适",
             "safety_warning_p1": "如果情感对话任务给您带来了任何不适或痛苦，请记住 AI Agent 不能替代专业的治疗师。",
@@ -356,7 +356,7 @@ LOCALIZATION_STRINGS = {
             "results_title": "研究结果与联系方式",
             "results_p1": "本研究的数据已匿名并安全存储。",
             "contact_p1": "问题或疑虑：",
-            "contact_p2": "获取结果：如果您希望在研究完成后获得一份研究结果摘要，请发送邮件给研究人员，主题为：“Request Research Results”。",
+            "contact_p2": "获取结果：如果您希望在研究完成后获得一份研究结果摘要，请发送邮件给研究人员，主题为：“Request Research Results”；或告知研究人员",
             "end_message": "您已完成实验的所有步骤。",
             "end_message_sub": "您现在可以关闭此浏览器窗口。",
         }
