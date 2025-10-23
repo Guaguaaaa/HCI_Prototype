@@ -68,7 +68,7 @@ Output the new summary:
         new_summary = data.get("response", "").strip()
         if new_summary:
             session['summary'] = new_summary
-            print("✅ [Summary Updated]:", new_summary)
+            # print("✅ [Summary Updated]:", new_summary)
     except requests.RequestException as e:
         print(f"⚠️ Failed to generate summary: {e}")
     except Exception as e:
@@ -102,9 +102,9 @@ def get_llm_response_stream(participant_id: str, user_input: str):
     full_prompt += "AI:"
 
     session['full_prompt'] = full_prompt
-    print("\n--- LLM Prompt ---")
-    print(full_prompt)
-    print("------------------\n")
+    # print("\n--- LLM Prompt ---")
+    # print(full_prompt)
+    # print("------------------\n")
 
     # --- 流式响应 ---
     full_ai_reply = ""

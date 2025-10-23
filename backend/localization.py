@@ -360,6 +360,52 @@ LOCALIZATION_STRINGS = {
             "end_message": "您已完成实验的所有步骤。",
             "end_message_sub": "您现在可以关闭此浏览器窗口。",
         }
+    },
+
+    # --- 新增：XAI_Version.html / non-XAI_version.html ---
+    "chat_interface": {
+        "en": {
+            "title": "Chat Interface",
+            "welcome_message": "Hello! How can I help you today? Please feel free to share your thoughts.",
+            "end_dialogue_button": "End Dialogue and Proceed to Questionnaire",
+            "input_placeholder": "Type your message...",
+            "modal_title": "Confirm Dialogue End",
+            "modal_p1": "Are you sure you want to end the conversation and proceed to the final questionnaires?",
+            "modal_p2": "Once ended, you <strong>cannot</strong> return to this chat.",
+            "modal_confirm_button": "Yes, End Dialogue",
+            "modal_cancel_button": "No, Continue Chat",
+
+            "xai_title": "AI Explanation Panel",
+            "xai_placeholder": "This panel will show explanations (XAI) about the AI's internal state or decisions after you send a message.",
+
+            "js_pid_error": "Participant ID not found in sessionStorage. Cannot proceed.",
+            "js_stream_error": "Error reading streaming message",
+            "js_http_error": "HTTP error! status: ",
+            "js_connect_error": "⚠️ Unable to connect backend LLM",
+            "js_modal_processing": "Processing...",
+            "js_dialogue_end_error": "An error occurred while ending the dialogue. Please contact the experimenter."
+        },
+        "zh-CN": {
+            "title": "聊天界面",
+            "welcome_message": "你好！今天我能帮你什么吗？请随时分享你的想法。",
+            "end_dialogue_button": "结束对话并进入问卷调查",
+            "input_placeholder": "输入您的消息...",
+            "modal_title": "确认结束对话",
+            "modal_p1": "您确定要结束对话并继续进行最后的问卷调查吗？",
+            "modal_p2": "一旦结束，您将<strong>无法</strong>返回此聊天。",
+            "modal_confirm_button": "是的，结束对话",
+            "modal_cancel_button": "不，继续聊天",
+
+            "xai_title": "AI 解释面板",
+            "xai_placeholder": "当您发送消息后，此面板将显示有关 AI 内部状态或决策的解释 (XAI)。",
+
+            "js_pid_error": "在 sessionStorage 中未找到参与者ID。无法继续。",
+            "js_stream_error": "⚠️ 读取响应流时出错。",
+            "js_http_error": "HTTP 错误！状态：",
+            "js_connect_error": "⚠️ 未能连接到本地 AI 后端。",
+            "js_modal_processing": "处理中...",
+            "js_dialogue_end_error": "结束对话时发生错误。请联系实验人员。"
+        }
     }
 }
 

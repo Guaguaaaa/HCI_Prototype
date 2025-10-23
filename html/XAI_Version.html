@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- This meta tag tells search engines not to index this page -->
     <meta name="robots" content="noindex, nofollow">
-    <title>Chat Interface</title>
-    <!-- Favicon -->
+    <title>{{ strings.title }}</title>
     <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
     <link rel="shortcut icon" href="/assets/favicon.ico" />
@@ -15,9 +13,8 @@
     <link rel="manifest" href="/assets/site.webmanifest" />
 
     <style>
-        /* --- CSS Styles --- */
-
-        /* Basic page reset and font settings */
+        /* --- CSS Styles (Unchanged) --- */
+        /* ... (您的所有 CSS 样式保持不变) ... */
         body {
             margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -108,6 +105,8 @@
             padding: 16px;
             border-top: 1px solid #e0e0e0;
             background-color: #ffffff;
+            /* --- NEW --- Align items to the bottom */
+            align-items: flex-end;
         }
 
         #user-input {
@@ -119,6 +118,12 @@
             font-size: 16px;
             margin-right: 12px;
             font-family: inherit;
+
+            /* --- NEW: Style for auto-resize --- */
+            line-height: 1.6;
+            max-height: 200px; /* Max height before scrolling */
+            overflow-y: auto; /* Show scrollbar when needed */
+            box-sizing: border-box; /* Include padding in height */
         }
         #user-input:focus {
             outline: none;
@@ -139,6 +144,8 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            /* --- NEW --- Prevent button from shrinking */
+            flex-shrink: 0;
         }
         #chat-form button:hover { background-color: #0056b3; }
         #chat-form button:disabled { background-color: #a0c3e8; cursor: not-allowed; }
@@ -180,6 +187,11 @@
 
         .emoji-btn:active {
             transform: scale(0.9);
+        }
+
+        #text-section h2 {
+            font-size: 1.2rem;
+            color: #333;
         }
 
         #text-section p {
@@ -287,15 +299,13 @@
 </head>
 <body>
 
-<!-- --- HTML Structure --- -->
 <div id="main-layout">
-    <!-- Left Column -->
     <div id="chat-container">
         <div id="chat-log">
             <div class="message ai-message">
                 <div class="avatar">AI</div>
                 <div class="content">
-                    <p>Hello! How can I help you today? Ask me anything below.</p>
+                    <p>{{ strings.welcome_message | safe }}</p>
                 </div>
             </div>
         </div>
@@ -303,12 +313,13 @@
 
             <div class="end-dialogue-container">
                 <button type="button" id="end-dialogue-button" class="end-dialogue-button">
-                    End Dialogue and Proceed to Questionnaire
+                    {{ strings.end_dialogue_button }}
                 </button>
             </div>
 
             <form id="chat-form">
-                <input type="text" id="user-input" placeholder="Type your message..." required>
+                <textarea id="user-input" placeholder="{{ strings.input_placeholder }}" rows="1"></textarea>
+
                 <button type="submit" id="send-button">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
                 </button>
@@ -316,7 +327,6 @@
         </div>
     </div>
 
-    <!-- Right Column -->
     <div id="right-panel">
         <div id="emoji-section">
             <div id="emoji-display">😊</div>
@@ -329,20 +339,20 @@
             </div>
         </div>
         <div id="text-section">
-            <h2>Here would be the output of XAI explanation.</h2><br>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+            <h2>{{ strings.xai_title }}</h2><br>
+            <p>{{ strings.xai_placeholder }}</p>
         </div>
     </div>
 </div>
 
 <div id="end-dialogue-modal" class="modal" style="display: none;">
     <div class="modal-content">
-        <h3>Confirm Dialogue End</h3>
-        <p>Are you sure you want to end the conversation and proceed to the final questionnaires?</p>
-        <p>Once ended, you <strong>cannot</strong> return to this chat.</p>
+        <h3>{{ strings.modal_title }}</h3>
+        <p>{{ strings.modal_p1 }}</p>
+        <p>{{ strings.modal_p2 | safe }}</p>
         <div class="modal-buttons">
-            <button id="confirm-end-btn">Yes, End Dialogue</button>
-            <button id="cancel-end-btn">No, Continue Chat</button>
+            <button id="confirm-end-btn">{{ strings.modal_confirm_button }}</button>
+            <button id="cancel-end-btn">{{ strings.modal_cancel_button }}</button>
         </div>
     </div>
 </div>
@@ -350,19 +360,27 @@
 <script>
     // --- JavaScript Logic ---
 
+    // --- JS Localization (Injected from Jinja2) ---
+    const JS_PID_ERROR = '{{ strings.js_pid_error }}';
+    const JS_STREAM_ERROR = '{{ strings.js_stream_error }}';
+    const JS_HTTP_ERROR = '{{ strings.js_http_error }}';
+    const JS_CONNECT_ERROR = '{{ strings.js_connect_error }}';
+    const JS_MODAL_PROCESSING = '{{ strings.js_modal_processing }}';
+    const JS_DIALOGUE_END_ERROR = '{{ strings.js_dialogue_end_error }}';
+    const JS_MODAL_CONFIRM_TEXT = '{{ strings.modal_confirm_button }}';
+
     // --- Chat Logic (Left Column) ---
-    //const PARTICIPANT_ID = "TEMP_TEST_ID_001"; // <--- 临时设置一个 ID
     // 确保从 Session Storage 中获取 participant_id
     const participantId = sessionStorage.getItem('participant_id');
 
     if (!participantId) {
         // Fallback error handling if PID is missing (good practice)
-        console.error("Participant ID not found in sessionStorage. Cannot proceed.");
-        // 可以添加 UI 提示或重定向到 admin_setup.html
+        console.error(JS_PID_ERROR);
+        // 可以在 UI 提示或重定向到 admin_setup.html
     }
 
     const chatForm = document.getElementById('chat-form');
-    const userInput = document.getElementById('user-input');
+    const userInput = document.getElementById('user-input'); // This is now a <textarea>
     const chatLog = document.getElementById('chat-log');
     const sendButton = chatForm.querySelector('button');
 
@@ -375,7 +393,7 @@
         appendMessage(userText, 'user');
 
         userInput.value = '';
-        userInput.style.height = 'auto';
+        userInput.style.height = 'auto'; // This line now correctly resets the textarea
         toggleSendButton();
 
         // AI response (STREAMING + MARKDOWN)
@@ -396,7 +414,7 @@
         })
         .then(response => {
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(JS_HTTP_ERROR + response.status);
             }
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
@@ -421,21 +439,33 @@
                     chatLog.scrollTop = chatLog.scrollHeight;
                     readStream();
                 }).catch(error => {
-                    console.error('Error reading stream:', error);
-                    aiParagraph.innerHTML += "<br>⚠️ 读取响应流时出错。";
+                    console.error(JS_STREAM_ERROR, error);
+                    aiParagraph.innerHTML += "<br>" + JS_STREAM_ERROR;
                 });
             }
             readStream();
         })
         .catch(error => {
             console.error('Error:', error);
-            aiParagraph.innerHTML = "⚠️ 未能连接到本地 AI 后端。";
+            aiParagraph.innerHTML = JS_CONNECT_ERROR;
         });
     });
 
     userInput.addEventListener('input', toggleSendButton);
 
+    // --- NEW: Add input event listener for auto-resizing ---
+    userInput.addEventListener('input', () => {
+        // Reset height to 'auto' to allow shrinking
+        userInput.style.height = 'auto';
+        // Set height to the scroll height (content height)
+        userInput.style.height = userInput.scrollHeight + 'px';
+    });
+
+
     // --- 输入法 (IME) 提交 ---
+    // This logic is now perfect for a textarea:
+    // Enter = Submit
+    // Shift+Enter = Newline
     userInput.addEventListener('keydown', function(event) {
         // 检查用户是否仍在使用输入法组合
         if (event.isComposing) {
@@ -502,7 +532,7 @@
         });
     });
 
-    // --- New Dialogue Termination Logic ---
+    // --- New Dialogue Termination Logic (Unchanged) ---
 
     const endDialogueButton = document.getElementById('end-dialogue-button');
     const endDialogueModal = document.getElementById('end-dialogue-modal');
@@ -530,7 +560,7 @@
     // Final confirmation to end dialogue: Calls the backend
     confirmEndButton.addEventListener('click', async () => {
         confirmEndButton.disabled = true;
-        confirmEndButton.textContent = 'Processing...';
+        confirmEndButton.textContent = JS_MODAL_PROCESSING;
 
         // 禁用所有 UI 交互以防止重复提交或意外操作
         const messageInput = document.getElementById('user-input');
@@ -562,14 +592,14 @@
 
         } catch (error) {
             console.error('Dialogue End Error:', error);
-            alert('An error occurred while ending the dialogue. Please contact the experimenter.');
+            alert(JS_DIALOGUE_END_ERROR);
 
             // 恢复按钮状态，允许用户重试或寻求帮助
             messageInput.disabled = false;
             sendButton.disabled = false;
             endDialogueButton.disabled = false;
             confirmEndButton.disabled = false;
-            confirmEndButton.textContent = 'Yes, End Dialogue';
+            confirmEndButton.textContent = JS_MODAL_CONFIRM_TEXT;
             endDialogueModal.style.display = 'none';
         }
     });

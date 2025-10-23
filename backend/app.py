@@ -108,7 +108,8 @@ def serve_html(filename):
         "post_questionnaire.html": "post_questionnaire",
         "open_ended_qs.html": "open_ended_qs",
         "debrief.html": "debrief",
-        # XAI_Version.html and non-XAI_version.html are chat interfaces, keep them static for now
+        "XAI_Version.html": "chat_interface",
+        "non-XAI_version.html": "chat_interface",
     }
 
     module_name = PAGE_MAPPING.get(filename)
@@ -120,7 +121,8 @@ def serve_html(filename):
         # 渲染流程页面
         return render_template_page(filename, module_name, participant_id)
 
-    # 非流程页面 (admin_setup, chat interfaces, assets) 仍作为静态文件服务
+    # 非流程页面 (admin_setup, assets) 仍作为静态文件服务
+    # (聊天界面现在已在 MAPPING 中，不再作为静态文件服务)
     return send_from_directory(os.path.join(app.static_folder, 'html'), filename)
 
 # 确保 assets 目录下的所有文件可以被访问
