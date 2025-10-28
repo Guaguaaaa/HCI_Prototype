@@ -157,18 +157,27 @@
 </div>
 
 <script>
-    // 流程控制索引：INSTRUCTIONS 在 EXPERIMENT_STEPS 数组中的索引是 2
-    const CURRENT_STEP_INDEX = 2;
-    const CURRENT_STEP_NAME = "INSTRUCTIONS";
+    // --- MODIFIED: Step index and name are now injected by Flask/Jinja2 ---
+    // const CURRENT_STEP_INDEX = 2; // (OLD)
+    // const CURRENT_STEP_NAME = "INSTRUCTIONS"; // (OLD)
+    const CURRENT_STEP_INDEX = {{ current_step_index | default(2) | tojson }}; // (NEW) Default to 2 for safety
+    const CURRENT_STEP_NAME = {{ current_step_name | default("INSTRUCTIONS_1") | tojson }}; // (NEW) Default to _1 for safety
 
     const startButton = document.getElementById('start-btn');
     const errorMessage = document.getElementById('error-message');
+
+    // JS Localization (using defaults for safety if Jinja fails)
+    const LOADING_TEXT = '{{ strings.loading_chat | default("Loading Chat Interface...", true) }}';
+    const BUTTON_TEXT = '{{ strings.button_text | default("I Understand. Start the Dialogue", true) }}';
+    const ERROR_PID_MISSING = '{{ strings.error_pid_missing | default("Error: PID missing.", true) }}';
+    const ERROR_UNKNOWN = '{{ strings.error_unknown_data_save | default("Unknown error", true) }}';
+
 
     // 确保从 Session Storage 中获取 participant_id
     const participantId = sessionStorage.getItem('participant_id');
 
     if (!participantId) {
-        errorMessage.textContent = "Error: Participant ID missing. Please start over.";
+        errorMessage.textContent = ERROR_PID_MISSING;
         errorMessage.style.display = 'block';
         startButton.disabled = true;
         setTimeout(() => {
@@ -180,7 +189,7 @@
         event.preventDefault();
 
         startButton.disabled = true;
-        startButton.textContent = 'Loading Chat Interface...';
+        startButton.textContent = LOADING_TEXT;
         errorMessage.style.display = 'none';
 
         // 1. 调用后端路由：记录受试者已阅读说明
@@ -189,25 +198,28 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 participant_id: participantId,
-                step_name: CURRENT_STEP_NAME,
-                data: { acknowledged: true, version: "NON_XAI" }, // 记录已阅读说明和版本
-                current_step_index: CURRENT_STEP_INDEX // 下一个步骤的索引是 3 (DIALOGUE)
+                step_name: CURRENT_STEP_NAME, // e.g., "INSTRUCTIONS_1" or "INSTRUCTIONS_2"
+                data: {
+                    acknowledged: true,
+                    version: "NON_XAI" // This instruction page is always the NON_XAI version
+                },
+                current_step_index: CURRENT_STEP_INDEX // e.g., 2 or 6
             })
         })
         .then(response => response.json())
         .then(apiData => {
             if (apiData.success) {
-                // 2. 跳转到对话页面 (后端会根据条件自动跳转)
+                // 2. 跳转到对话页面 (后端会根据条件自动跳转到 non-XAI_version.html)
                 window.location.href = apiData.next_url;
             } else {
-                throw new Error(apiData.error || 'Unknown error during transition.');
+                throw new Error(apiData.error || ERROR_UNKNOWN);
             }
         })
         .catch(error => {
             console.error('Transition error:', error);
             errorMessage.textContent = `Error: ${error.message}`;
             startButton.disabled = false;
-            startButton.textContent = 'I Understand. Start the Dialogue';
+            startButton.textContent = BUTTON_TEXT;
             errorMessage.style.display = 'block';
         });
     });

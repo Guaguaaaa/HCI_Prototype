@@ -98,6 +98,33 @@
             border-radius: 4px;
         }
 
+        /* Added style for manipulation check radios */
+        .manip-check-options {
+            display: flex;
+            justify-content: space-around; /* Space out options */
+            align-items: center;
+            background-color: #fff;
+            padding: 15px 10px; /* More padding */
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .manip-check-options div { /* Target each radio/label pair */
+            display: flex;
+            align-items: center;
+        }
+        .manip-check-options input[type="radio"] {
+             margin-right: 8px; /* Space between radio and label */
+             /* Optional: Make radio buttons larger */
+             /* width: 16px;
+             height: 16px; */
+        }
+        .manip-check-options label {
+             margin-bottom: 0; /* Override default label margin */
+             font-weight: normal; /* Make labels less bold */
+             color: #555;
+        }
+
+
         .likert-option {
             flex: 1;
             text-align: center;
@@ -108,6 +135,11 @@
 
         .likert-option input[type="radio"] {
             display: none;
+        }
+
+        /* Make manip check radios visible */
+        .manip-check-options input[type="radio"] {
+            display: inline-block !important;
         }
 
         .radio-label-likert {
@@ -184,6 +216,11 @@
             text-align: center;
             margin-top: 15px;
         }
+
+        /* (NEW) Hide elements */
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -207,15 +244,11 @@
                         <div class="likert-option"><input type="radio" id="qa1_4" name="trust_reliable" value="4"><label for="qa1_4" class="radio-label-likert">4</label></div>
                         <div class="likert-option"><input type="radio" id="qa1_5" name="trust_reliable" value="5"><label for="qa1_5" class="radio-label-likert">5</label></div>
                         <div class="likert-option"><input type="radio" id="qa1_6" name="trust_reliable" value="6"><label for="qa1_6" class="radio-label-likert">6</label></div>
-                        <div class="likert-option"><input type="radio" id="qa1_7" name="trust_reliable" value="7" required><label for="qa1_7" class="radio-label-likert">7</label></div>
+                        <div class="likert-option"><input type="radio" id="qa1_7" name="trust_reliable" value="7"><label for="qa1_7" class="radio-label-likert">7</label></div>
                     </div>
                     <div class="likert-labels">
-                        <span>{{ strings.strongly_disagree }}</span>
-                        <span></span>
-                        <span></span>
-                        <span>{{ strings.neutral }}</span>
-                        <span></span>
-                        <span></span>
+                        <span>{{ strings.strongly_disagree }}</span><span></span><span></span>
+                        <span>{{ strings.neutral }}</span><span></span><span></span>
                         <span>{{ strings.strongly_agree }}</span>
                     </div>
                 </li>
@@ -229,15 +262,11 @@
                         <div class="likert-option"><input type="radio" id="qa2_4" name="trust_predictable" value="4"><label for="qa2_4" class="radio-label-likert">4</label></div>
                         <div class="likert-option"><input type="radio" id="qa2_5" name="trust_predictable" value="5"><label for="qa2_5" class="radio-label-likert">5</label></div>
                         <div class="likert-option"><input type="radio" id="qa2_6" name="trust_predictable" value="6"><label for="qa2_6" class="radio-label-likert">6</label></div>
-                        <div class="likert-option"><input type="radio" id="qa2_7" name="trust_predictable" value="7" required><label for="qa2_7" class="radio-label-likert">7</label></div>
+                        <div class="likert-option"><input type="radio" id="qa2_7" name="trust_predictable" value="7"><label for="qa2_7" class="radio-label-likert">7</label></div>
                     </div>
-                    <div class="likert-labels">
-                        <span>{{ strings.strongly_disagree }}</span>
-                        <span></span>
-                        <span></span>
-                        <span>{{ strings.neutral }}</span>
-                        <span></span>
-                        <span></span>
+                     <div class="likert-labels">
+                        <span>{{ strings.strongly_disagree }}</span><span></span><span></span>
+                        <span>{{ strings.neutral }}</span><span></span><span></span>
                         <span>{{ strings.strongly_agree }}</span>
                     </div>
                 </li>
@@ -251,15 +280,11 @@
                         <div class="likert-option"><input type="radio" id="qa3_4" name="trust_dependent" value="4"><label for="qa3_4" class="radio-label-likert">4</label></div>
                         <div class="likert-option"><input type="radio" id="qa3_5" name="trust_dependent" value="5"><label for="qa3_5" class="radio-label-likert">5</label></div>
                         <div class="likert-option"><input type="radio" id="qa3_6" name="trust_dependent" value="6"><label for="qa3_6" class="radio-label-likert">6</label></div>
-                        <div class="likert-option"><input type="radio" id="qa3_7" name="trust_dependent" value="7" required><label for="qa3_7" class="radio-label-likert">7</label></div>
+                        <div class="likert-option"><input type="radio" id="qa3_7" name="trust_dependent" value="7"><label for="qa3_7" class="radio-label-likert">7</label></div>
                     </div>
-                    <div class="likert-labels">
-                        <span>{{ strings.strongly_disagree }}</span>
-                        <span></span>
-                        <span></span>
-                        <span>{{ strings.neutral }}</span>
-                        <span></span>
-                        <span></span>
+                     <div class="likert-labels">
+                        <span>{{ strings.strongly_disagree }}</span><span></span><span></span>
+                        <span>{{ strings.neutral }}</span><span></span><span></span>
                         <span>{{ strings.strongly_agree }}</span>
                     </div>
                 </li>
@@ -273,15 +298,11 @@
                         <div class="likert-option"><input type="radio" id="qa4_4" name="trust_confidence" value="4"><label for="qa4_4" class="radio-label-likert">4</label></div>
                         <div class="likert-option"><input type="radio" id="qa4_5" name="trust_confidence" value="5"><label for="qa4_5" class="radio-label-likert">5</label></div>
                         <div class="likert-option"><input type="radio" id="qa4_6" name="trust_confidence" value="6"><label for="qa4_6" class="radio-label-likert">6</label></div>
-                        <div class="likert-option"><input type="radio" id="qa4_7" name="trust_confidence" value="7" required><label for="qa4_7" class="radio-label-likert">7</label></div>
+                        <div class="likert-option"><input type="radio" id="qa4_7" name="trust_confidence" value="7"><label for="qa4_7" class="radio-label-likert">7</label></div>
                     </div>
-                    <div class="likert-labels">
-                        <span>{{ strings.strongly_disagree }}</span>
-                        <span></span>
-                        <span></span>
-                        <span>{{ strings.neutral }}</span>
-                        <span></span>
-                        <span></span>
+                     <div class="likert-labels">
+                        <span>{{ strings.strongly_disagree }}</span><span></span><span></span>
+                        <span>{{ strings.neutral }}</span><span></span><span></span>
                         <span>{{ strings.strongly_agree }}</span>
                     </div>
                 </li>
@@ -295,15 +316,11 @@
                         <div class="likert-option"><input type="radio" id="qa5_4" name="trust_intent" value="4"><label for="qa5_4" class="radio-label-likert">4</label></div>
                         <div class="likert-option"><input type="radio" id="qa5_5" name="trust_intent" value="5"><label for="qa5_5" class="radio-label-likert">5</label></div>
                         <div class="likert-option"><input type="radio" id="qa5_6" name="trust_intent" value="6"><label for="qa5_6" class="radio-label-likert">6</label></div>
-                        <div class="likert-option"><input type="radio" id="qa5_7" name="trust_intent" value="7" required><label for="qa5_7" class="radio-label-likert">7</label></div>
+                        <div class="likert-option"><input type="radio" id="qa5_7" name="trust_intent" value="7"><label for="qa5_7" class="radio-label-likert">7</label></div>
                     </div>
-                    <div class="likert-labels">
-                        <span>{{ strings.strongly_disagree }}</span>
-                        <span></span>
-                        <span></span>
-                        <span>{{ strings.neutral }}</span>
-                        <span></span>
-                        <span></span>
+                     <div class="likert-labels">
+                        <span>{{ strings.strongly_disagree }}</span><span></span><span></span>
+                        <span>{{ strings.neutral }}</span><span></span><span></span>
                         <span>{{ strings.strongly_agree }}</span>
                     </div>
                 </li>
@@ -311,21 +328,17 @@
                 <li class="question-item">
                     <label class="question-label">{{ strings.q6_skeptic }}</label>
                     <div class="likert-scale" id="qA6">
-                        <div class="likert-option"><input type="radio" id="qa6_1" name="trust_skeptic" value="1" required><label for="qa6_1" class="radio-label-likert">1</label></div>
+                         <div class="likert-option"><input type="radio" id="qa6_1" name="trust_skeptic" value="1" required><label for="qa6_1" class="radio-label-likert">1</label></div>
                         <div class="likert-option"><input type="radio" id="qa6_2" name="trust_skeptic" value="2"><label for="qa6_2" class="radio-label-likert">2</label></div>
                         <div class="likert-option"><input type="radio" id="qa6_3" name="trust_skeptic" value="3"><label for="qa6_3" class="radio-label-likert">3</label></div>
                         <div class="likert-option"><input type="radio" id="qa6_4" name="trust_skeptic" value="4"><label for="qa6_4" class="radio-label-likert">4</label></div>
                         <div class="likert-option"><input type="radio" id="qa6_5" name="trust_skeptic" value="5"><label for="qa6_5" class="radio-label-likert">5</label></div>
                         <div class="likert-option"><input type="radio" id="qa6_6" name="trust_skeptic" value="6"><label for="qa6_6" class="radio-label-likert">6</label></div>
-                        <div class="likert-option"><input type="radio" id="qa6_7" name="trust_skeptic" value="7" required><label for="qa6_7" class="radio-label-likert">7</label></div>
+                        <div class="likert-option"><input type="radio" id="qa6_7" name="trust_skeptic" value="7"><label for="qa6_7" class="radio-label-likert">7</label></div>
                     </div>
-                    <div class="likert-labels">
-                        <span>{{ strings.strongly_disagree }}</span>
-                        <span></span>
-                        <span></span>
-                        <span>{{ strings.neutral }}</span>
-                        <span></span>
-                        <span></span>
+                     <div class="likert-labels">
+                        <span>{{ strings.strongly_disagree }}</span><span></span><span></span>
+                        <span>{{ strings.neutral }}</span><span></span><span></span>
                         <span>{{ strings.strongly_agree }}</span>
                     </div>
                 </li>
@@ -341,20 +354,16 @@
                         <div class="likert-option"><input type="radio" id="qb1_4" name="empathy_understood" value="4"><label for="qb1_4" class="radio-label-likert">4</label></div>
                         <div class="likert-option"><input type="radio" id="qb1_5" name="empathy_understood" value="5"><label for="qb1_5" class="radio-label-likert">5</label></div>
                         <div class="likert-option"><input type="radio" id="qb1_6" name="empathy_understood" value="6"><label for="qb1_6" class="radio-label-likert">6</label></div>
-                        <div class="likert-option"><input type="radio" id="qb1_7" name="empathy_understood" value="7" required><label for="qb1_7" class="radio-label-likert">7</label></div>
+                        <div class="likert-option"><input type="radio" id="qb1_7" name="empathy_understood" value="7"><label for="qb1_7" class="radio-label-likert">7</label></div>
                     </div>
                     <div class="likert-labels">
-                        <span>{{ strings.strongly_disagree }}</span>
-                        <span></span>
-                        <span></span>
-                        <span>{{ strings.neutral }}</span>
-                        <span></span>
-                        <span></span>
+                        <span>{{ strings.strongly_disagree }}</span><span></span><span></span>
+                        <span>{{ strings.neutral }}</span><span></span><span></span>
                         <span>{{ strings.strongly_agree }}</span>
                     </div>
                 </li>
 
-                <li class="question-item">
+                 <li class="question-item">
                     <label class="question-label">{{ strings.q8_cared }}</label>
                     <div class="likert-scale" id="qB2">
                         <div class="likert-option"><input type="radio" id="qb2_1" name="empathy_cared" value="1" required><label for="qb2_1" class="radio-label-likert">1</label></div>
@@ -363,15 +372,11 @@
                         <div class="likert-option"><input type="radio" id="qb2_4" name="empathy_cared" value="4"><label for="qb2_4" class="radio-label-likert">4</label></div>
                         <div class="likert-option"><input type="radio" id="qb2_5" name="empathy_cared" value="5"><label for="qb2_5" class="radio-label-likert">5</label></div>
                         <div class="likert-option"><input type="radio" id="qb2_6" name="empathy_cared" value="6"><label for="qb2_6" class="radio-label-likert">6</label></div>
-                        <div class="likert-option"><input type="radio" id="qb2_7" name="empathy_cared" value="7" required><label for="qb2_7" class="radio-label-likert">7</label></div>
+                        <div class="likert-option"><input type="radio" id="qb2_7" name="empathy_cared" value="7"><label for="qb2_7" class="radio-label-likert">7</label></div>
                     </div>
                     <div class="likert-labels">
-                        <span>{{ strings.strongly_disagree }}</span>
-                        <span></span>
-                        <span></span>
-                        <span>{{ strings.neutral }}</span>
-                        <span></span>
-                        <span></span>
+                        <span>{{ strings.strongly_disagree }}</span><span></span><span></span>
+                        <span>{{ strings.neutral }}</span><span></span><span></span>
                         <span>{{ strings.strongly_agree }}</span>
                     </div>
                 </li>
@@ -385,15 +390,11 @@
                         <div class="likert-option"><input type="radio" id="qb3_4" name="empathy_responsive" value="4"><label for="qb3_4" class="radio-label-likert">4</label></div>
                         <div class="likert-option"><input type="radio" id="qb3_5" name="empathy_responsive" value="5"><label for="qb3_5" class="radio-label-likert">5</label></div>
                         <div class="likert-option"><input type="radio" id="qb3_6" name="empathy_responsive" value="6"><label for="qb3_6" class="radio-label-likert">6</label></div>
-                        <div class="likert-option"><input type="radio" id="qb3_7" name="empathy_responsive" value="7" required><label for="qb3_7" class="radio-label-likert">7</label></div>
+                        <div class="likert-option"><input type="radio" id="qb3_7" name="empathy_responsive" value="7"><label for="qb3_7" class="radio-label-likert">7</label></div>
                     </div>
                     <div class="likert-labels">
-                        <span>{{ strings.strongly_disagree }}</span>
-                        <span></span>
-                        <span></span>
-                        <span>{{ strings.neutral }}</span>
-                        <span></span>
-                        <span></span>
+                        <span>{{ strings.strongly_disagree }}</span><span></span><span></span>
+                        <span>{{ strings.neutral }}</span><span></span><span></span>
                         <span>{{ strings.strongly_agree }}</span>
                     </div>
                 </li>
@@ -407,15 +408,11 @@
                         <div class="likert-option"><input type="radio" id="qb4_4" name="empathy_warm" value="4"><label for="qb4_4" class="radio-label-likert">4</label></div>
                         <div class="likert-option"><input type="radio" id="qb4_5" name="empathy_warm" value="5"><label for="qb4_5" class="radio-label-likert">5</label></div>
                         <div class="likert-option"><input type="radio" id="qb4_6" name="empathy_warm" value="6"><label for="qb4_6" class="radio-label-likert">6</label></div>
-                        <div class="likert-option"><input type="radio" id="qb4_7" name="empathy_warm" value="7" required><label for="qb4_7" class="radio-label-likert">7</label></div>
+                        <div class="likert-option"><input type="radio" id="qb4_7" name="empathy_warm" value="7"><label for="qb4_7" class="radio-label-likert">7</label></div>
                     </div>
                     <div class="likert-labels">
-                        <span>{{ strings.strongly_disagree }}</span>
-                        <span></span>
-                        <span></span>
-                        <span>{{ strings.neutral }}</span>
-                        <span></span>
-                        <span></span>
+                        <span>{{ strings.strongly_disagree }}</span><span></span><span></span>
+                        <span>{{ strings.neutral }}</span><span></span><span></span>
                         <span>{{ strings.strongly_agree }}</span>
                     </div>
                 </li>
@@ -429,20 +426,16 @@
                         <div class="likert-option"><input type="radio" id="qb5_4" name="empathy_respect" value="4"><label for="qb5_4" class="radio-label-likert">4</label></div>
                         <div class="likert-option"><input type="radio" id="qb5_5" name="empathy_respect" value="5"><label for="qb5_5" class="radio-label-likert">5</label></div>
                         <div class="likert-option"><input type="radio" id="qb5_6" name="empathy_respect" value="6"><label for="qb5_6" class="radio-label-likert">6</label></div>
-                        <div class="likert-option"><input type="radio" id="qb5_7" name="empathy_respect" value="7" required><label for="qb5_7" class="radio-label-likert">7</label></div>
+                        <div class="likert-option"><input type="radio" id="qb5_7" name="empathy_respect" value="7"><label for="qb5_7" class="radio-label-likert">7</label></div>
                     </div>
                     <div class="likert-labels">
-                        <span>{{ strings.strongly_disagree }}</span>
-                        <span></span>
-                        <span></span>
-                        <span>{{ strings.neutral }}</span>
-                        <span></span>
-                        <span></span>
+                        <span>{{ strings.strongly_disagree }}</span><span></span><span></span>
+                        <span>{{ strings.neutral }}</span><span></span><span></span>
                         <span>{{ strings.strongly_agree }}</span>
                     </div>
                 </li>
 
-                <li class="question-item">
+                 <li class="question-item">
                     <label class="question-label">{{ strings.q12_insincere }}</label>
                     <div class="likert-scale" id="qB6">
                         <div class="likert-option"><input type="radio" id="qb6_1" name="empathy_insincere" value="1" required><label for="qb6_1" class="radio-label-likert">1</label></div>
@@ -451,15 +444,11 @@
                         <div class="likert-option"><input type="radio" id="qb6_4" name="empathy_insincere" value="4"><label for="qb6_4" class="radio-label-likert">4</label></div>
                         <div class="likert-option"><input type="radio" id="qb6_5" name="empathy_insincere" value="5"><label for="qb6_5" class="radio-label-likert">5</label></div>
                         <div class="likert-option"><input type="radio" id="qb6_6" name="empathy_insincere" value="6"><label for="qb6_6" class="radio-label-likert">6</label></div>
-                        <div class="likert-option"><input type="radio" id="qb6_7" name="empathy_insincere" value="7" required><label for="qb6_7" class="radio-label-likert">7</label></div>
+                        <div class="likert-option"><input type="radio" id="qb6_7" name="empathy_insincere" value="7"><label for="qb6_7" class="radio-label-likert">7</label></div>
                     </div>
                     <div class="likert-labels">
-                        <span>{{ strings.strongly_disagree }}</span>
-                        <span></span>
-                        <span></span>
-                        <span>{{ strings.neutral }}</span>
-                        <span></span>
-                        <span></span>
+                        <span>{{ strings.strongly_disagree }}</span><span></span><span></span>
+                        <span>{{ strings.neutral }}</span><span></span><span></span>
                         <span>{{ strings.strongly_agree }}</span>
                     </div>
                 </li>
@@ -468,38 +457,33 @@
 
                 <li class="question-item attention-check">
                     <label class="question-label">{{ strings.q13_attn_check | safe }}</label>
-                    <div class="likert-scale" id="qD1">
-                        <div class="likert-option"><input type="radio" id="qd1_1" name="attention_check" value="1" required><label for="qd1_1" class="radio-label-likert">1</label></div>
+                    <div class="likert-scale" id="qD1"> <div class="likert-option"><input type="radio" id="qd1_1" name="attention_check" value="1" required><label for="qd1_1" class="radio-label-likert">1</label></div>
                         <div class="likert-option"><input type="radio" id="qd1_2" name="attention_check" value="2"><label for="qd1_2" class="radio-label-likert">2</label></div>
                         <div class="likert-option"><input type="radio" id="qd1_3" name="attention_check" value="3"><label for="qd1_3" class="radio-label-likert">3</label></div>
                         <div class="likert-option"><input type="radio" id="qd1_4" name="attention_check" value="4"><label for="qd1_4" class="radio-label-likert">4</label></div>
                         <div class="likert-option"><input type="radio" id="qd1_5" name="attention_check" value="5"><label for="qd1_5" class="radio-label-likert">5</label></div>
                         <div class="likert-option"><input type="radio" id="qd1_6" name="attention_check" value="6"><label for="qd1_6" class="radio-label-likert">6</label></div>
-                        <div class="likert-option"><input type="radio" id="qd1_7" name="attention_check" value="7" required><label for="qd1_7" class="radio-label-likert">7</label></div>
+                        <div class="likert-option"><input type="radio" id="qd1_7" name="attention_check" value="7"><label for="qd1_7" class="radio-label-likert">7</label></div>
                     </div>
                     <div class="likert-labels">
-                        <span>{{ strings.strongly_disagree }}</span>
-                        <span></span>
-                        <span></span>
-                        <span>{{ strings.neutral }}</span>
-                        <span></span>
-                        <span></span>
+                        <span>{{ strings.strongly_disagree }}</span><span></span><span></span>
+                        <span>{{ strings.neutral }}</span><span></span><span></span>
                         <span>{{ strings.strongly_agree }}</span>
                     </div>
                 </li>
 
                 <li class="question-item">
                     <label class="question-label">{{ strings.q14_manip_check | safe }}</label>
-                    <div class="likert-scale" id="mc">
+                    <div class="manip-check-options" id="mc">
                         <div><input type="radio" id="mc_yes" name="manip_check_expl" value="1" required><label for="mc_yes">{{ strings.q14_yes }}</label></div>
                         <div><input type="radio" id="mc_no" name="manip_check_expl" value="2"><label for="mc_no">{{ strings.q14_no }}</label></div>
                         <div><input type="radio" id="mc_not_sure" name="manip_check_expl" value="3"><label for="mc_not_sure">{{ strings.q14_notsure }}</label></div>
                     </div>
                 </li>
 
-                <h2 class="question-section-title">{{ strings.section_d_title | safe }}</h2>
+                <h2 class="question-section-title" id="section-d-xai">{{ strings.section_d_title | safe }}</h2>
 
-                <li class="question-item">
+                <li class="question-item xai-question">
                     <label class="question-label">{{ strings.q15_useful }}</label>
                     <div class="likert-scale" id="qC1">
                         <div class="likert-option"><input type="radio" id="qc1_1" name="expl_useful" value="1" required><label for="qc1_1" class="radio-label-likert">1</label></div>
@@ -508,20 +492,16 @@
                         <div class="likert-option"><input type="radio" id="qc1_4" name="expl_useful" value="4"><label for="qc1_4" class="radio-label-likert">4</label></div>
                         <div class="likert-option"><input type="radio" id="qc1_5" name="expl_useful" value="5"><label for="qc1_5" class="radio-label-likert">5</label></div>
                         <div class="likert-option"><input type="radio" id="qc1_6" name="expl_useful" value="6"><label for="qc1_6" class="radio-label-likert">6</label></div>
-                        <div class="likert-option"><input type="radio" id="qc1_7" name="expl_useful" value="7" required><label for="qc1_7" class="radio-label-likert">7</label></div>
+                        <div class="likert-option"><input type="radio" id="qc1_7" name="expl_useful" value="7"><label for="qc1_7" class="radio-label-likert">7</label></div>
                     </div>
                     <div class="likert-labels">
-                        <span>{{ strings.strongly_disagree }}</span>
-                        <span></span>
-                        <span></span>
-                        <span>{{ strings.neutral }}</span>
-                        <span></span>
-                        <span></span>
+                        <span>{{ strings.strongly_disagree }}</span><span></span><span></span>
+                        <span>{{ strings.neutral }}</span><span></span><span></span>
                         <span>{{ strings.strongly_agree }}</span>
                     </div>
                 </li>
 
-                <li class="question-item">
+                <li class="question-item xai-question">
                     <label class="question-label">{{ strings.q16_clear }}</label>
                     <div class="likert-scale" id="qC2">
                         <div class="likert-option"><input type="radio" id="qc2_1" name="expl_clear" value="1" required><label for="qc2_1" class="radio-label-likert">1</label></div>
@@ -530,42 +510,34 @@
                         <div class="likert-option"><input type="radio" id="qc2_4" name="expl_clear" value="4"><label for="qc2_4" class="radio-label-likert">4</label></div>
                         <div class="likert-option"><input type="radio" id="qc2_5" name="expl_clear" value="5"><label for="qc2_5" class="radio-label-likert">5</label></div>
                         <div class="likert-option"><input type="radio" id="qc2_6" name="expl_clear" value="6"><label for="qc2_6" class="radio-label-likert">6</label></div>
-                        <div class="likert-option"><input type="radio" id="qc2_7" name="expl_clear" value="7" required><label for="qc2_7" class="radio-label-likert">7</label></div>
+                        <div class="likert-option"><input type="radio" id="qc2_7" name="expl_clear" value="7"><label for="qc2_7" class="radio-label-likert">7</label></div>
                     </div>
                     <div class="likert-labels">
-                        <span>{{ strings.strongly_disagree }}</span>
-                        <span></span>
-                        <span></span>
-                        <span>{{ strings.neutral }}</span>
-                        <span></span>
-                        <span></span>
+                        <span>{{ strings.strongly_disagree }}</span><span></span><span></span>
+                        <span>{{ strings.neutral }}</span><span></span><span></span>
                         <span>{{ strings.strongly_agree }}</span>
                     </div>
                 </li>
 
-                <li class="question-item">
+                <li class="question-item xai-question">
                     <label class="question-label">{{ strings.q17_sufficient }}</label>
                     <div class="likert-scale" id="qC3">
-                        <div class="likert-option"><input type="radio" id="qc3_1" name="expl_sufficient" value="1" required><label for="qc3_1" class="radio-label-likert">1</label></div>
+                         <div class="likert-option"><input type="radio" id="qc3_1" name="expl_sufficient" value="1" required><label for="qc3_1" class="radio-label-likert">1</label></div>
                         <div class="likert-option"><input type="radio" id="qc3_2" name="expl_sufficient" value="2"><label for="qc3_2" class="radio-label-likert">2</label></div>
                         <div class="likert-option"><input type="radio" id="qc3_3" name="expl_sufficient" value="3"><label for="qc3_3" class="radio-label-likert">3</label></div>
                         <div class="likert-option"><input type="radio" id="qc3_4" name="expl_sufficient" value="4"><label for="qc3_4" class="radio-label-likert">4</label></div>
                         <div class="likert-option"><input type="radio" id="qc3_5" name="expl_sufficient" value="5"><label for="qc3_5" class="radio-label-likert">5</label></div>
                         <div class="likert-option"><input type="radio" id="qc3_6" name="expl_sufficient" value="6"><label for="qc3_6" class="radio-label-likert">6</label></div>
-                        <div class="likert-option"><input type="radio" id="qc3_7" name="expl_sufficient" value="7" required><label for="qc3_7" class="radio-label-likert">7</label></div>
+                        <div class="likert-option"><input type="radio" id="qc3_7" name="expl_sufficient" value="7"><label for="qc3_7" class="radio-label-likert">7</label></div>
                     </div>
                     <div class="likert-labels">
-                        <span>{{ strings.strongly_disagree }}</span>
-                        <span></span>
-                        <span></span>
-                        <span>{{ strings.neutral }}</span>
-                        <span></span>
-                        <span></span>
+                        <span>{{ strings.strongly_disagree }}</span><span></span><span></span>
+                        <span>{{ strings.neutral }}</span><span></span><span></span>
                         <span>{{ strings.strongly_agree }}</span>
                     </div>
                 </li>
 
-                <li class="question-item">
+                <li class="question-item xai-question">
                     <label class="question-label">{{ strings.q18_trusthelp }}</label>
                     <div class="likert-scale" id="qC4">
                         <div class="likert-option"><input type="radio" id="qc4_1" name="expl_trusthelp" value="1" required><label for="qc4_1" class="radio-label-likert">1</label></div>
@@ -574,15 +546,11 @@
                         <div class="likert-option"><input type="radio" id="qc4_4" name="expl_trusthelp" value="4"><label for="qc4_4" class="radio-label-likert">4</label></div>
                         <div class="likert-option"><input type="radio" id="qc4_5" name="expl_trusthelp" value="5"><label for="qc4_5" class="radio-label-likert">5</label></div>
                         <div class="likert-option"><input type="radio" id="qc4_6" name="expl_trusthelp" value="6"><label for="qc4_6" class="radio-label-likert">6</label></div>
-                        <div class="likert-option"><input type="radio" id="qc4_7" name="expl_trusthelp" value="7" required><label for="qc4_7" class="radio-label-likert">7</label></div>
+                        <div class="likert-option"><input type="radio" id="qc4_7" name="expl_trusthelp" value="7"><label for="qc4_7" class="radio-label-likert">7</label></div>
                     </div>
                     <div class="likert-labels">
-                        <span>{{ strings.strongly_disagree }}</span>
-                        <span></span>
-                        <span></span>
-                        <span>{{ strings.neutral }}</span>
-                        <span></span>
-                        <span></span>
+                        <span>{{ strings.strongly_disagree }}</span><span></span><span></span>
+                        <span>{{ strings.neutral }}</span><span></span><span></span>
                         <span>{{ strings.strongly_agree }}</span>
                     </div>
                 </li>
@@ -596,27 +564,52 @@
 </div>
 
 <script>
-    // 流程控制索引：POST_QUESTIONNAIRE 在 EXPERIMENT_STEPS 数组中的索引是 4
-    const CURRENT_STEP_INDEX = 4;
-    const CURRENT_STEP_NAME = "POST_QUESTIONNAIRE";
+    // --- MODIFIED: Step index and name are now injected by Flask/Jinja2 ---
+    // const CURRENT_STEP_INDEX = 4; // (OLD)
+    // const CURRENT_STEP_NAME = "POST_QUESTIONNAIRE"; // (OLD)
+    const CURRENT_STEP_INDEX = {{ current_step_index | default(4) | tojson }}; // (NEW) e.g., 4 or 8
+    const CURRENT_STEP_NAME = {{ current_step_name | default("POST_QUESTIONNAIRE_1") | tojson }}; // (NEW) e.g., "_1" or "_2"
+
+    // --- NEW: Condition flag injected by Flask/Jinja2 ---
+    const IS_XAI_CONDITION = {{ is_xai_condition | default(true) | tojson }}; // Default to true for safety
 
     const form = document.getElementById('post-questionnaire-form');
     const submitButton = document.getElementById('submit-btn');
     const errorMessage = document.getElementById('error-message');
 
     // JS Localization
-    const ERROR_ANSWER_ALL = '{{ strings.error_answer_all }}';
-    const LOADING_TEXT = '{{ strings.saving_data }}';
-    const CONTINUE_TEXT = '{{ strings.button_text }}';
-    const ERROR_UNKNOWN_SAVE = '{{ strings.error_unknown_data_save }}';
-    const ERROR_PID_MISSING = '{{ strings.error_pid_missing }}';
+    const ERROR_ANSWER_ALL = '{{ strings.error_answer_all | default("Please answer all questions.", true) }}';
+    const LOADING_TEXT = '{{ strings.saving_data | default("Saving Data...", true) }}';
+    // (NEW) Default button text needs to be generic now
+    const CONTINUE_TEXT = '{{ strings.button_text | default("Continue", true) }}';
+    const ERROR_UNKNOWN_SAVE = '{{ strings.error_unknown_data_save | default("Unknown error during data save.", true) }}';
+    const ERROR_PID_MISSING = '{{ strings.error_pid_missing | default("Error: PID missing.", true) }}';
 
 
     // 确保从 Session Storage 中获取 participant_id
     const participantId = sessionStorage.getItem('participant_id');
 
     // Expected total questions: 6 (Trust) + 6 (Empathy) + 1 (Attention) + 1 (Manipulation) + 4 (XAI) = 18
-    const expectedQuestions = 18;
+    // (MODIFIED) This is now dynamic based on condition
+    let expectedQuestions = 18;
+
+    // --- NEW: Logic to hide XAI section if needed ---
+    const xaiSectionTitle = document.getElementById('section-d-xai');
+    const xaiQuestionItems = document.querySelectorAll('.xai-question'); // Select all <li> with this class
+
+    if (!IS_XAI_CONDITION) {
+        if (xaiSectionTitle) {
+            xaiSectionTitle.classList.add('hidden'); // Hide the title
+        }
+        xaiQuestionItems.forEach(item => {
+            item.classList.add('hidden'); // Hide each XAI question item
+            // Disable 'required' on the radio buttons within the hidden item
+            const radios = item.querySelectorAll('input[type="radio"]');
+            radios.forEach(radio => radio.required = false);
+        });
+        expectedQuestions = 14; // Adjust count for validation (18 - 4)
+    }
+    // --- End NEW Logic ---
 
     if (!participantId) {
         errorMessage.textContent = ERROR_PID_MISSING;
@@ -633,28 +626,71 @@
         const formData = new FormData(form);
         const data = {};
 
-        // 客户端验证：检查是否所有问题都被回答
+        // 客户端验证：检查是否所有 *可见的* 问题都被回答
         let answeredQuestions = 0;
+        let firstUnanswered = null; // Track the first unanswered element
 
-        // 将 FormData 转换为 JSON 对象，并将值转换为整数
-        formData.forEach((value, key) => {
-            // 只有 Likert 量表题需要转换为整数
-            if (key !== 'manip_check_expl') {
-                 data[key] = parseInt(value);
-            } else {
-                 // Manipulation check 题为字符串（1, 2, 3）
-                 data[key] = value;
-            }
-            answeredQuestions++;
+        // Iterate through all required inputs that are NOT hidden
+        form.querySelectorAll('input[required]').forEach(input => {
+             // Check if the input itself or its parent question item is hidden
+            const parentItem = input.closest('.question-item');
+             if (!input.classList.contains('hidden') && (!parentItem || !parentItem.classList.contains('hidden'))) {
+                 // Check radio buttons by name
+                 if (input.type === 'radio') {
+                     const groupName = input.name;
+                     if (!form.querySelector(`input[name="${groupName}"]:checked`)) {
+                          if (!firstUnanswered) {
+                               firstUnanswered = input.closest('.question-item') || input; // Scroll to the whole item
+                          }
+                     }
+                 }
+                 // (Could add checks for other input types if needed)
+             }
         });
 
-        // 检查总数是否匹配
-        if (answeredQuestions !== expectedQuestions) {
+        // Collect data and count answers *after* validation check
+        formData.forEach((value, key) => {
+             // Only include data if the question was visible (relevant for XAI q's)
+             const inputElement = form.querySelector(`[name="${key}"]`);
+             const parentItem = inputElement ? inputElement.closest('.question-item') : null;
+
+             // Include if not hidden OR if it's not an XAI question (always include A, B, C)
+             if (!parentItem || !parentItem.classList.contains('hidden') || !parentItem.classList.contains('xai-question')) {
+                 // Convert Likert to integer, keep manip check as string
+                 if (key !== 'manip_check_expl') {
+                     data[key] = parseInt(value);
+                 } else {
+                     data[key] = value;
+                 }
+                 // Count only collected answers
+                 if (inputElement.type === 'radio') {
+                      // Count radio groups only once
+                     if (!data.hasOwnProperty(`__counted_${key}`)) { // Use a temporary flag
+                         answeredQuestions++;
+                         data[`__counted_${key}`] = true;
+                     }
+                 } else {
+                     answeredQuestions++;
+                 }
+             }
+        });
+
+        // Clean up temporary flags
+         Object.keys(data).forEach(key => {
+            if (key.startsWith('__counted_')) {
+                delete data[key];
+            }
+         });
+
+
+        // Check count against expected (14 or 18)
+        if (answeredQuestions !== expectedQuestions || firstUnanswered) {
             errorMessage.textContent = ERROR_ANSWER_ALL;
             errorMessage.style.display = 'block';
-
-            // 可选：为了用户体验，可以滚动到第一个未回答的问题
-            // 简单实现是检查所有的 radio group
+            if (firstUnanswered) {
+                 // Scroll to the first missing answer
+                 firstUnanswered.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
             return;
         }
 
@@ -668,15 +704,15 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 participant_id: participantId,
-                step_name: CURRENT_STEP_NAME,
-                data: data,
-                current_step_index: CURRENT_STEP_INDEX
+                step_name: CURRENT_STEP_NAME, // e.g., POST_QUESTIONNAIRE_1 or _2
+                data: data, // Contains only visible fields here
+                current_step_index: CURRENT_STEP_INDEX // e.g., 4 or 8
             })
         })
         .then(response => response.json())
         .then(apiData => {
             if (apiData.success) {
-                // 2. 跳转到下一个页面 (Open-Ended Questions)
+                // 2. 跳转到下一个页面 (Washout or Open-Ended Questions)
                 window.location.href = apiData.next_url;
             } else {
                 const errorText = apiData.error || ERROR_UNKNOWN_SAVE;

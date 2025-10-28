@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale-1.0">
+    <title>{{ strings.title }}</title>
+    <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
+    <link rel="manifest" href="/assets/site.webmanifest" />
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .form-section {
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+        }
+
+        .form-section h1 {
+            font-size: 2.2rem;
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .form-section p {
+            margin-bottom: 30px;
+            color: #666;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        #timer-display {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: #3498db;
+            margin: 20px 0;
+        }
+
+        /* Button styling */
+        .btn-submit {
+            display: block;
+            width: 100%;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            background-color: #2ecc71; /* Green when ready */
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 30px;
+        }
+
+        .btn-submit:disabled {
+            background-color: #a0c3e8; /* Blue-grey when disabled */
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+    <div class="form-section">
+        <h1>{{ strings.title }}</h1>
+        <p>{{ strings.intro | safe }}</p>
+
+        <p>{{ strings.timer_prefix }}</p>
+        <h2 id="timer-display">05:00</h2>
+
+        <form id="washout-form">
+            <button type="submit" id="submit-btn" class="btn-submit" disabled>{{ strings.button_text }}</button>
+            <p id="error-message" class="error-message" style="display: none;"></p>
+        </form>
+    </div>
+</div>
+
+<script>
+    // 流程控制索引：WASHOUT 在 EXPERIMENT_STEPS 数组中的索引是 5
+    // const CURRENT_STEP_INDEX = 5; (Injected by backend)
+    // const CURRENT_STEP_NAME = "WASHOUT"; (Injected by backend)
+    const CURRENT_STEP_INDEX = {{ current_step_index | tojson }};
+    const CURRENT_STEP_NAME = {{ current_step_name | tojson }};
+
+    const form = document.getElementById('washout-form');
+    const submitButton = document.getElementById('submit-btn');
+    const errorMessage = document.getElementById('error-message');
+    const timerDisplay = document.getElementById('timer-display');
+
+    // JS Localization
+    const LOADING_TEXT = '{{ strings.saving_data | default("Saving Data...", true) }}';
+    const BUTTON_READY_TEXT = '{{ strings.button_ready_text | default("Start Next Session", true) }}';
+    const ERROR_EARLY_SUBMIT = '{{ strings.error_early_submit | default("Please wait for the full 5-minute break.", true) }}';
+
+    // 确保从 Session Storage 中获取 participant_id
+    const participantId = sessionStorage.getItem('participant_id');
+
+    let timerInterval;
+    let secondsRemaining = 300; // 5 minutes
+
+    if (!participantId) {
+        errorMessage.textContent = '{{ strings.error_pid_missing | default("Error: PID missing.", true) }}';
+        errorMessage.style.display = 'block';
+        submitButton.disabled = true;
+    } else {
+        startTimer();
+    }
+
+    function startTimer() {
+        timerInterval = setInterval(() => {
+            secondsRemaining--;
+
+            if (secondsRemaining <= 0) {
+                clearInterval(timerInterval);
+                timerDisplay.textContent = "00:00";
+                enableButton();
+            } else {
+                updateTimerDisplay();
+            }
+        }, 1000);
+        updateTimerDisplay();
+    }
+
+    function updateTimerDisplay() {
+        const minutes = Math.floor(secondsRemaining / 60);
+        const seconds = secondsRemaining % 60;
+        timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    function enableButton() {
+        submitButton.disabled = false;
+        submitButton.textContent = BUTTON_READY_TEXT;
+    }
+
+    form.addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        // (Frontend check, though backend does the real validation)
+        if (secondsRemaining > 0) {
+            errorMessage.textContent = ERROR_EARLY_SUBMIT;
+            errorMessage.style.display = 'block';
+            return;
+        }
+
+        submitButton.disabled = true;
+        submitButton.textContent = LOADING_TEXT;
+        errorMessage.style.display = 'none';
+
+        // 1. 调用后端路由保存数据并获取下一个 URL
+        // 后端将执行严格的时间验证
+        fetch('http://127.0.0.1:5000/save_data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                participant_id: participantId,
+                step_name: CURRENT_STEP_NAME,
+                data: {
+                    "frontend_timer_complete": true
+                },
+                current_step_index: CURRENT_STEP_INDEX
+            })
+        })
+        .then(response => response.json())
+        .then(apiData => {
+            if (apiData.success) {
+                // 2. 跳转到下一个页面 (Instructions 2)
+                window.location.href = apiData.next_url;
+            } else {
+                // (This will catch the backend's < 300 second error)
+                throw new Error(apiData.error || '{{ strings.error_unknown_data_save | default("Unknown error", true) }}');
+            }
+        })
+        .catch(error => {
+            console.error('Data save error:', error);
+            errorMessage.textContent = `Error: ${error.message}`;
+            errorMessage.style.display = 'block';
+            // (Re-enable button if submission failed, allowing retry)
+            enableButton();
+        });
+    });
+</script>
+
+</body>
+</html>

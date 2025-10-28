@@ -31,6 +31,7 @@ LOCALIZATION_STRINGS = {
 
     # --- index.html (Informed Consent) ---
     "consent": {
+        # ... (此模块内容保持不变) ...
         "en": {
             "title": "Research Experiment: Informed Consent Confirmation",
             "title_h3": "Study Summary & Procedure",
@@ -67,6 +68,7 @@ LOCALIZATION_STRINGS = {
 
     # --- demographics.html ---
     "demographics": {
+        # ... (此模块内容保持不变) ...
         "en": {
             "title": "Demographics Survey",
             "intro": "Please provide the following basic information about yourself. Your answers will be kept confidential and used only for statistical analysis.",
@@ -121,6 +123,7 @@ LOCALIZATION_STRINGS = {
 
     # --- baseline_mood.html ---
     "baseline_mood": {
+        # ... (此模块内容保持不变) ...
         "en": {
             "title": "Baseline Mood Assessment",
             "intro": "Before beginning the experiment, please answer the following questions to assess your current mood and state of activation.",
@@ -151,6 +154,7 @@ LOCALIZATION_STRINGS = {
 
     # --- instructions_xai.html / instructions_non_xai.html ---
     "instructions": {
+        # ... (此模块内容保持不变) ...
         "en": {
             "title_xai": "Experiment Task Instructions",
             "title_non_xai": "Experiment Task Instructions",
@@ -196,7 +200,7 @@ LOCALIZATION_STRINGS = {
             "xai_interface_list2": "您的任务：您可以自由阅读这些解释、忽略它们，或利用它们更好地理解 Agent。它们仅供您参考。",
             "starters_title": "对话起始建议",
             "hint_box_text": "如果您不确定从何开始，这里有一些建议：",
-            "starter_challenges": "近期挑战：“你最近在工作/学校有没有遇到什么有压力或令人沮丧的事情？”",
+            "starter_challenges": "近期挑战：“你最近在工作/学校有没有遇到什么有压力或令人沮沮丧的事情？”",
             "starter_achievements": "小成就：“你最近有没有完成什么小目标，或者取得了一点进展想分享一下？”",
             "starter_daily_life": "日常生活/兴趣：“告诉 Agent 你正在看的一部电视剧，或者你希望听取它意见的日常困境。”",
             "starter_relationships": "人际关系：“你最近和朋友、家人或同事之间有没有发生什么小摩擦或温馨时刻？”",
@@ -213,6 +217,7 @@ LOCALIZATION_STRINGS = {
 
     # --- post_questionnaire.html ---
     "post_questionnaire": {
+        # ... (此模块内容保持不变) ...
         "en": {
             "title": "Post-Experiment Questionnaire",
             "intro": "Please reflect on the conversation you just had with the AI Agent and answer the following questions based on your experience. Select the option that best reflects your agreement with the statement. (1 = Strongly Disagree, 7 = Strongly Agree)",
@@ -280,19 +285,41 @@ LOCALIZATION_STRINGS = {
             "q17_sufficient": "17. 解释的量是适当的（不多不少）。*",
             "q18_trusthelp": "18. 该解释使我更容易相信 Agent 的判断。*",
 
-            "button_text": "继续到开放式问题",
+            # (MODIFIED) 按钮文本现在有两个用途 (转到 Washout 或转到 Open-Ended)
+            # 我们将在 app.py 中动态决定这个文本，但保留默认值
+            "button_text": "Continue",  # (Modified from "Continue to Open-Ended Questions")
             "error_answer_all": "请回答所有问题后再继续。",
         }
     },
 
-    # --- open_ended_qs.html ---
+    # --- (NEW) washout.html ---
+    "washout": {
+        "en": {
+            "title": "Break Time",
+            "intro": "You have completed the first session. Please take a mandatory <strong>5-minute break</strong> before proceeding to the second session. You may stand up and stretch.",
+            "timer_prefix": "Time remaining:",
+            "button_text": "Continue to Next Session (Locked)",
+            "button_ready_text": "Start Next Session",
+            "error_early_submit": "Please wait for the full 5-minute break to ensure data quality."
+        },
+        "zh-CN": {
+            "title": "休息时间",
+            "intro": "您已完成第一阶段实验。在进入第二阶段之前，请必须休息 <strong>5 分钟</strong>。您可以站起来伸展一下。",
+            "timer_prefix": "剩余时间:",
+            "button_text": "继续下一阶段 (锁定中)",
+            "button_ready_text": "开始下一阶段",
+            "error_early_submit": "为保证数据质量，请等待5分钟休息时间完全结束。"
+        }
+    },
+
+    # --- (MODIFIED) open_ended_qs.html ---
     "open_ended_qs": {
         "en": {
             "title": "Open-Ended Questions",
-            "intro": "Please use the text boxes below to provide additional qualitative feedback on your experience.",
-            "q1_trust": "1. Briefly explain: Why do you (or do you not) trust this system? (Aim for 2-3 sentences)",
-            "q2_empathy": "2. Briefly explain: Which details made you feel the system was 'empathic' or 'not empathic'? (Aim for 2-3 sentences)",
-            "q3_general": "3. What aspect of your interaction with the Agent did you find most confusing or most surprising? Do you have any suggestions for improving the Agent's responses or the interface design?",
+            "intro": "Please reflect on the <strong>two</strong> agents you interacted with and provide comparative feedback below.",
+            "q1_trust": "1. <b>Trust Comparison:</b> Please compare the two agents (Agent 1 vs. Agent 2). Did you trust one more than the other? Briefly explain why. (Aim for 2-3 sentences)",
+            "q2_empathy": "2. <b>Empathy Comparison:</b> Which agent felt more 'empathic' or 'understanding'? Please describe the details (e.g., responses, explanations, or lack thereof) that led to this feeling. (Aim for 2-3 sentences)",
+            "q3_general": "3. <b>Overall Feedback:</b> What aspect of your interaction (with either agent, or the switch between them) did you find most confusing or surprising? Do you have any suggestions for improving the agents or the interface design?",
             "q4_interview": "4. Would you be willing to be contacted for an optional follow-up interview about your experience?*",
             "q4_yes": "Yes, I am willing to be contacted",
             "q4_no": "No, thank you",
@@ -305,10 +332,10 @@ LOCALIZATION_STRINGS = {
         },
         "zh-CN": {
             "title": "开放式问题",
-            "intro": "请使用下面的文本框，提供您对实验体验的更多定性反馈。",
-            "q1_trust": "1. 请简要解释：您为什么信任（或不信任）该系统？（目标：2-3 句话）",
-            "q2_empathy": "2. 请简要解释：哪些细节让您觉得系统<strong>“富有共情 (empathic)”</strong>或<strong>“不富有共情 (not empathic)”</strong>？（目标：2-3 句话）",
-            "q3_general": "3. 您与 Agent 互动过程中，发现最令人困惑或最令人惊讶的方面是什么？您对改进 Agent 的回应或界面设计有何建议？",
+            "intro": "请回顾您刚才互动过的<b>两个</b> Agent，并在下方提供您的对比反馈。",
+            "q1_trust": "1. <b>信任对比:</b> 请比较这两个 Agent (Agent 1 vs. Agent 2)。您更信任哪一个？请简要解释原因。(目标: 2-3句话)",
+            "q2_empathy": "2. <b>共情对比:</b> 您觉得哪一个 Agent 更有“共情能力”或更“善解人意”？请描述导致这种感觉的细节 (例如：回应、解释，或缺少解释)。(目标: 2-3句话)",
+            "q3_general": "3. <b>总体反馈:</b> 在您的互动中 (无论是与哪个Agent，或是它们之间的切换)，您觉得最困惑或最惊讶的是什么？您对改进 Agent 或界面设计有什么建议吗？",
             "q4_interview": "4. 您是否愿意接受一次关于您体验的可选后续访谈 (optional follow-up interview)？*",
             "q4_yes": "是，我愿意接受联系",
             "q4_no": "否，谢谢",
@@ -322,6 +349,7 @@ LOCALIZATION_STRINGS = {
     },
 
     "debrief": {
+        # ... (此模块内容保持不变) ...
         "en": {
             "title": "Experiment Completed!",
             "thank_you": "Thank you very much for your time and thoughtful participation in this research study. Your contribution is highly valuable to our work in Human-Computer Interaction (HCI).",
@@ -346,7 +374,8 @@ LOCALIZATION_STRINGS = {
             "thank_you": "非常感谢您的宝贵时间以及对本研究的深思熟虑的参与。您的贡献对于我们在<strong>人机交互 (HCI)</strong> 领域的工作具有极高的价值。",
             "purpose_title": "研究目的揭示",
             "purpose_1": "本研究的主要目的是比较 <strong>提供（或不提供）AI 生成的情感判断解释</strong> 如何影响用户对情感支持对话 Agent 的<strong>信任 (Trust)</strong> 和<strong>感知到的共情 (Perceived Empathy)</strong>。",
-            "purpose_2": "您被随机分配到 <strong>XAI 条件</strong>（带有解释）或 <strong>非 XAI 条件</strong>（不带解释）。您的反馈有助于我们确定透明度是否能改善 AI 支持系统的用户体验。",
+            # (MODIFIED) 更新了 Debrief 文本以反映 within-subjects 设计
+            "purpose_2": "In this study, you experienced <strong>both</strong> conditions: one with AI explanations (XAI condition) and one without (Non-XAI condition). Your feedback helps us determine if this transparency improves the user experience with AI support systems.",
             "safety_title": "心理健康安全资源",
             "safety_warning_h3": "⚠️ 重要提示：如果您感到不适",
             "safety_warning_p1": "如果情感对话任务给您带来了任何不适或痛苦，请记住 AI Agent 不能替代专业的治疗师。",
@@ -362,8 +391,9 @@ LOCALIZATION_STRINGS = {
         }
     },
 
-    # --- 新增：XAI_Version.html / non-XAI_version.html ---
+    # --- chat_interface ---
     "chat_interface": {
+        # ... (此模块内容保持不变) ...
         "en": {
             "title": "Chat Interface",
             "welcome_message": "Hello! How can I help you today? Please feel free to share your thoughts.",
@@ -410,7 +440,7 @@ LOCALIZATION_STRINGS = {
 }
 
 
-# 辅助函数：根据语言和键获取文本
+# (辅助函数 get_localized_string 保持不变)
 def get_localized_string(module: str, key: str, language: str) -> str:
     """从本地化字典中安全地获取指定语言的文本"""
     # 优先获取模块内的文本
@@ -432,7 +462,7 @@ def get_localized_string(module: str, key: str, language: str) -> str:
     return f"[[MISSING_KEY: {module}.{key}]]"
 
 
-# 主函数，返回一个完整的本地化字典用于 Jinja 模板
+# (主函数 get_localization_for_page 保持不变)
 def get_localization_for_page(page_module: str, language: str) -> dict:
     """返回给定页面和语言的所有本地化字符串"""
 
