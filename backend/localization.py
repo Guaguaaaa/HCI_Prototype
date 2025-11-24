@@ -239,7 +239,7 @@ LOCALIZATION_STRINGS = {
 
             "section_c_title": "Section C: Quality Control",
             "q13_attn_check": "13. <strong>ATTENTION CHECK:</strong> To show you are carefully reading the questions, please select \"Strongly Agree\" (i.e., 7) for this item.*",
-            "q14_manip_check": "14. Did the system display explanations (e.g., highlighted your text and explained why it judged a certain emotion) during the conversation?*",
+            "q14_manip_check": "14. Did the system display explanations (e.g., displayed emotion emoji and explained why it judged a certain emotion) during the conversation?*",
             "q14_yes": "1 = Yes, I saw explanations",
             "q14_no": "2 = No, I did not see explanations",
             "q14_notsure": "3 = Not sure / Didn't pay attention",
@@ -274,7 +274,7 @@ LOCALIZATION_STRINGS = {
 
             "section_c_title": "C 部分：质量控制",
             "q13_attn_check": "13. <strong>注意力检查 (ATTENTION CHECK)</strong>：为了表明您正在仔细阅读问题，请为此项选择<strong>“非常同意”（即 7）</strong>。*",
-            "q14_manip_check": "14. 在对话过程中，系统是否显示了<strong>解释</strong>（例如，突出显示您的文本并解释其判断某种情绪的原因）？*",
+            "q14_manip_check": "14. 在对话过程中，系统是否显示了<strong>解释</strong>（例如，显示情绪表情并解释其判断某种情绪的原因）？*",
             "q14_yes": "1 = 是，我看到了解释",
             "q14_no": "2 = 否，我没有看到解释",
             "q14_notsure": "3 = 不确定 / 没有注意",
@@ -349,7 +349,6 @@ LOCALIZATION_STRINGS = {
     },
 
     "debrief": {
-        # ... (此模块内容保持不变) ...
         "en": {
             "title": "Experiment Completed!",
             "thank_you": "Thank you very much for your time and thoughtful participation in this research study. Your contribution is highly valuable to our work in Human-Computer Interaction (HCI).",

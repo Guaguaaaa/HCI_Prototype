@@ -1,7 +1,8 @@
 # backend/llm_service.py
 import requests
 import json
-# 引入新的配置变量名
+import re
+# 引入配置
 from backend.config import OLLAMA_API_URL, MAIN_MODEL_NAME, XAI_MODEL_NAME, SYSTEM_PROMPT, SUMMARY_INTERVAL
 
 # === 全局存储 - 参与者会话数据隔离 ===
@@ -28,6 +29,11 @@ def clear_session(participant_id: str) -> bool:
         print(f"🧹 Session cleared for PID {participant_id}")
         return True
     return False
+
+
+def contains_chinese(text: str) -> bool:
+    """简单的辅助函数：检查字符串是否包含中文字符"""
+    return bool(re.search(r'[\u4e00-\u9fff]', text))
 
 
 def generate_summary(session: dict):
@@ -70,24 +76,43 @@ Output the new summary:
         print(f"⚠️ Failed to generate summary: {e}")
 
 
-# --- NEW: XAI 解释生成函数 ---
+# --- XAI 解释生成函数 (动态 Prompt 语言) ---
 def generate_xai_explanation(user_text: str, sentiment_data: dict) -> str:
     """
     使用小模型生成 XAI 解释。
-    解释包含：对用户情绪的识别 + AI 意图的简述。
+    根据用户输入的语言动态切换 Prompt 语言，确保输出语言一致。
     """
     top_emotion = sentiment_data.get("top_emotion", "neutral")
 
-    # 构造 XAI Prompt
-    # 这是一个 Meta-Prompt，让 AI 解释自己的“内部状态”
-    xai_prompt = f"""
+    # 1. 语言检测与 Prompt 分流
+    if contains_chinese(user_text):
+        # --- 中文 Prompt ---
+        xai_prompt = f"""
+请分析以下用户输入和检测到的情绪。
+
+用户输入: "{user_text}"
+检测到的情绪标签: {top_emotion}
+
+任务：
+1. 用第三人称（如“系统检测到...”）简要解释为什么系统认为用户处于“{top_emotion}”情绪。
+2. 说明系统在下一条回复中的目标是什么（如“系统旨在...”）。
+3. 解释必须简洁（1-2句话）。
+
+**强制要求**：必须使用**中文**直接回答，不要翻译用户的话。
+"""
+    else:
+        # --- English Prompt ---
+        xai_prompt = f"""
 Analyze the following user input and the detected emotion.
+
 User Input: "{user_text}"
 Detected Emotion: {top_emotion}
 
-Task: Explain briefly (in 1-2 sentences) why you categorize the user's emotion as '{top_emotion}' and what your goal is for the next response to support them. 
-Write the explanation in the third person (e.g., "The system detects...", "The agent aims to...").
-Keep it concise and objective.
+Task: 
+1. Explain briefly (in 1-2 sentences, third person) why the system categorizes the user's emotion as '{top_emotion}'.
+2. State what the goal is for the next response to support them.
+
+**Constraint**: The explanation MUST be in **English**.
 """
 
     try:
@@ -98,8 +123,8 @@ Keep it concise and objective.
                 "prompt": xai_prompt,
                 "stream": False,
                 "options": {
-                    "temperature": 0.3,  # 保持解释的稳定性
-                    "max_tokens": 100
+                    "temperature": 0.3,
+                    "max_tokens": 150
                 }
             },
             timeout=10
@@ -112,6 +137,7 @@ Keep it concise and objective.
         return "System analysis unavailable."
 
 
+# --- MODIFIED: 主对话生成函数 (动态 System Prompt) ---
 def get_llm_response_stream(participant_id: str, user_input: str):
     """
     处理聊天逻辑和 LLM 响应流 (使用主模型)。
@@ -123,10 +149,25 @@ def get_llm_response_stream(participant_id: str, user_input: str):
     # 1. 添加用户输入
     conversation_history.append({"role": "user", "content": user_input})
 
-    # --- 构建 Prompt ---
+    # 2. 动态决定 System Prompt (语言跟随)
+    # 如果检测到中文输入，强制使用中文 System Prompt
+    if contains_chinese(user_input):
+        current_system_prompt = (
+            "你是一个温柔且富有同理心的对话伙伴。"
+            "请始终以自然、像人一样的方式回应。"
+            "请务必使用中文进行回复。"
+            "不要评价用户的语言能力。"
+        )
+    else:
+        # 英文输入则使用默认配置 (英文)
+        current_system_prompt = SYSTEM_PROMPT
+
+    # 3. 构建 Prompt
     full_prompt = ""
-    if len(conversation_history) == 1:
-        full_prompt += SYSTEM_PROMPT + "\n\n"
+
+    # --- FIX: 始终在 Prompt 开头包含 System Prompt ---
+    # 之前的逻辑是只在 len==1 时添加，导致后续轮次 System Prompt 丢失
+    full_prompt += current_system_prompt + "\n\n"
 
     if summary_memory:
         full_prompt += f"Context Summary:\n{summary_memory}\n\n"
@@ -136,6 +177,8 @@ def get_llm_response_stream(participant_id: str, user_input: str):
         full_prompt += f"{prefix} {msg['content']}\n"
 
     full_prompt += "AI:"
+
+    # 存入 Session 仅供调试查看
     session['full_prompt'] = full_prompt
 
     # --- 流式响应 (使用 MAIN_MODEL_NAME) ---
@@ -144,7 +187,7 @@ def get_llm_response_stream(participant_id: str, user_input: str):
         response = requests.post(
             OLLAMA_API_URL,
             json={
-                "model": MAIN_MODEL_NAME,  # 使用大模型进行对话
+                "model": MAIN_MODEL_NAME,
                 "prompt": full_prompt,
                 "stream": True
             },
