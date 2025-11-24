@@ -1,13 +1,18 @@
+import os
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 from flask import Flask, request, jsonify, Response, send_from_directory, render_template_string, redirect, url_for
 from flask_cors import CORS
-import os
+
 import json
 import time
 from datetime import datetime
 import csv
+import numpy as np
 
 from backend import llm_service
 from backend import data_manager
+from backend import sentiment_service
 from backend.config import VERSION_MAP, EXPERIMENT_STEPS, INSTRUCTION_VERSION_MAP
 from backend.localization import get_localization_for_page
 
@@ -66,7 +71,6 @@ def render_template_page(template_file_name: str, module_name: str, participant_
 
 
 # --- 静态文件服务路由 ---
-
 @app.route('/')
 def root():
     """根路由：重定向到 admin_setup 或 index.html (带 pid)"""
@@ -408,100 +412,146 @@ def save_data():
         return jsonify({"error": f"Internal server error: {e}"}), 500
 
 
-# --- MODIFIED: chat (添加 session_part) ---
+# --- MODIFIED: chat 路由 ---
 @app.route('/chat', methods=['POST'])
 def chat():
     user_input = request.json.get("message", "")
     participant_id = request.json.get("participant_id", "")
-    # explanation_shown 在 XAI_Version.html 中可能为 true/false， NonXAI 中不存在
     explanation_shown = request.json.get("explanation_shown", False)
 
     if not user_input or not participant_id:
         return Response("⚠️ No message or participant_id provided", status=400, mimetype='text/plain')
 
-    # 获取当前状态以确定 condition 和 session_part
     status = data_manager.get_participant_status(participant_id)
     condition = status.get("condition", "UNKNOWN")
     current_index = status.get("current_step_index")
 
-    session_part = 1  # 默认是第一部分
-    if current_index == EXPERIMENT_STEPS.index("DIALOGUE_2"):  # 7
+    session_part = 1
+    # 简单的逻辑判断是否为第二阶段
+    if current_index is not None and current_index >= 5:
         session_part = 2
 
     session = llm_service.get_session(participant_id)
-    # 在流开始前记录回合数（LLM Service 内部会+1）
     current_turn = session['turn_count'] + 1
     user_metrics = calculate_text_metrics(user_input)
 
     def generate_stream_and_log():
         full_ai_reply = b''
-        stream_error = None  # Track potential errors during streaming
+        stream_error = None
 
         try:
-            # 1. 调用 LLM 服务生成流
             stream = llm_service.get_llm_response_stream(participant_id, user_input)
-
             for chunk in stream:
                 full_ai_reply += chunk
                 yield chunk
 
         except Exception as e:
-            stream_error = e  # Capture error
-            print(f"Error during LLM stream for {participant_id}: {e}")
-            yield f"⚠️ Backend LLM error: {e}".encode('utf-8')  # Inform frontend
+            stream_error = e
+            print(f"Error during LLM stream: {e}")
+            yield f"⚠️ Backend LLM error: {e}".encode('utf-8')
 
         finally:
-            # 2. 在流结束后，记录回合分析数据 (仅当没有流错误且 LLM 有回复)
-            if not stream_error and full_ai_reply and session.get('turn_count',
-                                                                  0) == current_turn:  # Safely get turn_count
-                # 从 session history 获取最新的 AI 消息
-                # (需要确保 llm_service 在 finally 块中添加了 history)
-                ai_message = ""
+            if not stream_error and full_ai_reply:
+                # 1. 获取 AI 文本
+                ai_message_text = ""
                 if session.get('history') and session['history'][-1]['role'] == 'ai':
-                    ai_message = session['history'][-1]['content']
+                    ai_message_text = session['history'][-1]['content']
 
-                agent_metrics = calculate_text_metrics(ai_message)
+                agent_metrics = calculate_text_metrics(ai_message_text)
 
+                # 2. 情绪分析 (User)
+                user_sentiment = sentiment_service.analyze_sentiment(user_input)
+                u_label = user_sentiment.get("top_emotion")
+                u_conf = user_sentiment.get("top_score", 0.0)
+                u_score = sentiment_service.calculate_weighted_score(u_label, u_conf)
+
+                # 3. 情绪分析 (Agent)
+                agent_sentiment = sentiment_service.analyze_sentiment(ai_message_text)
+                a_label = agent_sentiment.get("top_emotion")
+                a_conf = agent_sentiment.get("top_score", 0.0)
+                a_score = sentiment_service.calculate_weighted_score(a_label, a_conf)
+
+                # 4. 更新内存中的情绪分数 (用于 fluctuation 计算)
+                if 'sentiment_scores' not in session:
+                    session['sentiment_scores'] = []
+                session['sentiment_scores'].append(u_score)
+
+                # 5. 构造数据
                 turn_data = {
                     "user_id": participant_id,
                     "condition": condition,
                     "turn": current_turn,
-                    "session_part": session_part,  # (NEW)
-                    "user_sentiment_score": None,  # (Placeholder)
-                    "user_sentiment_label": None,  # (Placeholder)
+                    "session_part": session_part,
+
                     "user_input_length_token": user_metrics["length_token"],
-                    "user_input_length_char": user_metrics["length_char"],
-                    "user_input_length_word": user_metrics["length_word"],
-                    "agent_sentiment_score": None,  # (Placeholder)
-                    "agent_sentiment_label": None,  # (Placeholder)
                     "agent_response_length_token": agent_metrics["length_token"],
-                    "agent_response_length_char": agent_metrics["length_char"],
-                    "agent_response_length_word": agent_metrics["length_word"],
-                    # explanation_shown is only relevant for XAI condition
-                    "explanation_shown": explanation_shown if condition == "XAI" else False
+                    "explanation_shown": explanation_shown if condition == "XAI" else False,
+
+                    # User Sentiment
+                    "user_sentiment_label": u_label,
+                    "user_sentiment_confidence": round(u_conf, 4),
+                    "user_sentiment_score": round(u_score, 4),
+                    # 修复：现在明确获取 raw_scores
+                    "user_raw_sentiment": user_sentiment.get("raw_scores", {}),
+
+                    # Agent Sentiment
+                    "agent_sentiment_label": a_label,
+                    "agent_sentiment_confidence": round(a_conf, 4),
+                    "agent_sentiment_score": round(a_score, 4),
+                    # 修复：现在明确获取 raw_scores
+                    "agent_raw_sentiment": agent_sentiment.get("raw_scores", {}),
                 }
 
-                # 3. 存储回合分析数据
                 data_manager.save_turn_data(participant_id, turn_data)
-            elif stream_error:
-                print(f"Info: Turn data not saved for {participant_id} turn {current_turn} due to stream error.")
-            elif not full_ai_reply:
-                print(f"Info: Turn data not saved for {participant_id} turn {current_turn} because AI reply was empty.")
-            # else: # turn count mismatch or other issue
-            #    print(f"Warning: Turn data may not be saved for {participant_id} turn {current_turn}. Session turn: {session.get('turn_count', 0)}")
 
     return Response(generate_stream_and_log(), mimetype='text/plain')
+
+
+# --- NEW ROUTE: /analyze (用于 XAI 和 情绪分析) ---
+@app.route('/analyze', methods=['POST'])
+def analyze():
+    """
+    新接口：接收用户消息，返回情绪分析结果和 XAI 解释。
+    前端应在发送 /chat 请求的同时（或之后立即）发送此请求。
+    """
+    try:
+        data = request.json
+        user_input = data.get("message", "")
+        participant_id = data.get("participant_id", "")
+
+        if not user_input:
+            return jsonify({"error": "No input provided"}), 400
+
+        # 1. 运行情绪分析 (Step 1 的成果)
+        print(f"🧠 Analyzing sentiment for PID {participant_id}...")
+        sentiment_result = sentiment_service.analyze_sentiment(user_input)
+
+        # 2. 生成 XAI 解释 (Step 2 的成果)
+        # 只有当条件是 XAI 时才需要生成解释，但为了简单，后端可以总是生成，前端决定显不显示
+        # 或者我们检查状态只为 XAI 生成
+        status = data_manager.get_participant_status(participant_id)
+        condition = status.get("condition", "NON_XAI")
+
+        xai_explanation = ""
+        if condition == "XAI":
+            print(f"🤖 Generating XAI explanation using {llm_service.XAI_MODEL_NAME}...")
+            xai_explanation = llm_service.generate_xai_explanation(user_input, sentiment_result)
+
+        # 3. 返回结果
+        return jsonify({
+            "success": True,
+            "sentiment": sentiment_result,  # 包含 top_emotion, ekman_scores 等
+            "explanation": xai_explanation
+        })
+
+    except Exception as e:
+        print(f"Error in /analyze: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 # --- MODIFIED: end_dialogue (区分 _1 和 _2) ---
 @app.route('/end_dialogue', methods=['POST'])
 def end_dialogue():
-    """
-    终止对话会话：
-    1. 记录结束时间、总轮数等，并区分是 DIALOGUE_END_1 还是 _2。
-    2. 推进状态到下一步 (POST_QUESTIONNAIRE_1 或 _2)。
-    3. 返回下一个实验步骤 URL。
-    """
     try:
         data = request.json
         participant_id = data.get("participant_id")
@@ -513,49 +563,61 @@ def end_dialogue():
         status = data_manager.get_participant_status(participant_id)
         current_index = status.get("current_step_index")
 
-        # 确定是哪个对话结束
+        # 确定 Step Name
         step_name = "DIALOGUE_END_UNKNOWN"
-        dialogue_step_index = -1
-        if current_index == EXPERIMENT_STEPS.index("DIALOGUE_1"):  # 3
-            step_name = "DIALOGUE_END_1"
-            dialogue_step_index = current_index
-        elif current_index == EXPERIMENT_STEPS.index("DIALOGUE_2"):  # 7
-            step_name = "DIALOGUE_END_2"
-            dialogue_step_index = current_index
-        else:
-            print(f"Error: /end_dialogue called at unexpected step index {current_index} for {participant_id}")
-            return jsonify({"error": "Dialogue ended at unexpected step."}), 400
+        next_step_index = -1
+        session_part = 1
 
-        # 1. 记录对话结束状态和指标
+        # 逻辑：查找 DIALOGUE_1 或 DIALOGUE_2
+        if "DIALOGUE_1" in EXPERIMENT_STEPS and current_index == EXPERIMENT_STEPS.index("DIALOGUE_1"):
+            step_name = "DIALOGUE_END_1"
+            session_part = 1
+            next_step_index = current_index + 1
+        elif "DIALOGUE_2" in EXPERIMENT_STEPS and current_index == EXPERIMENT_STEPS.index("DIALOGUE_2"):
+            step_name = "DIALOGUE_END_2"
+            session_part = 2
+            next_step_index = current_index + 1
+        else:
+            # Fallback
+            print(f"Warning: end_dialogue at index {current_index}, defaulting advancement.")
+            next_step_index = current_index + 1
+
+        # --- 计算情绪波动 (Emotion Fluctuation) ---
+        # 使用内存中累积的 session['sentiment_scores']
+        sentiment_scores = session.get('sentiment_scores', [])
+        fluctuation = 0.0
+
+        if len(sentiment_scores) > 1:
+            # 计算标准差 (Standard Deviation) 作为波动的代理指标
+            fluctuation = np.std(sentiment_scores)
+
+        # 记录结束数据
         dialogue_end_data = {
             "status": "Completed by user",
             "end_time": time.time(),
-            "total_turns": session.get('turn_count', 0),  # Safely get turn count
-            "session_part": 1 if step_name == "DIALOGUE_END_1" else 2,  # (NEW)
-            "emotion_fluctuation": None  # (Placeholder)
+            "total_turns": session.get('turn_count', 0),
+            "session_part": session_part,
+            "emotion_fluctuation": round(fluctuation, 4),  # 写入波动数据
+            "emotion_trajectory": sentiment_scores  # 同时记录轨迹，方便复查
         }
 
         if not data_manager.save_participant_data(participant_id, step_name, dialogue_end_data):
             return jsonify({"error": "Failed to save dialogue end data."}), 500
 
-        # 2. 确定下一个步骤的索引
-        next_step_index = dialogue_step_index + 1  # 4 或 8
-
-        # 3. 更新状态文件中的步骤索引
+        # 推进步骤
         if not data_manager.update_participant_step(participant_id, next_step_index):
-            return jsonify({"error": "Failed to update participant step after dialogue end."}), 500
+            return jsonify({"error": "Failed to update participant step."}), 500
 
-        # 4. 确定下一个步骤的 URL (需要更新后的状态来获取 condition)
-        status = data_manager.get_participant_status(participant_id)  # Re-read status
+        # 获取下一个 URL
+        status = data_manager.get_participant_status(participant_id)
         current_condition = status.get("condition")
 
         if next_step_index >= len(EXPERIMENT_STEPS):
             next_url_path = "/html/debrief.html"
         else:
-            next_step_key = EXPERIMENT_STEPS[next_step_index]  # POST_QUESTIONNAIRE_1 or _2
+            next_step_key = EXPERIMENT_STEPS[next_step_index]
             next_url_path = get_url_for_step(next_step_key, current_condition, participant_id).split('?')[0]
 
-        # 5. 返回下一个页面的 URL
         return jsonify({
             "success": True,
             "next_url": f"{next_url_path}?pid={participant_id}",
@@ -566,8 +628,7 @@ def end_dialogue():
         print(f"Error in /end_dialogue: {e}")
         import traceback
         traceback.print_exc()
-        return jsonify(
-            {"error": "Internal server error during dialogue termination. Please contact the experimenter."}), 500
+        return jsonify({"error": "Internal server error."}), 500
 
 
 # (save_contact 和 save_contact_to_separate_file 保持不变)
@@ -628,10 +689,8 @@ if __name__ == "__main__":
     print(f"💾 Data will be saved to: {data_manager.DATA_DIR}")
     print(f"🔄 Experiment Flow Steps: {EXPERIMENT_STEPS}")
 
-    # For production/in-person experiments, debug=False is crucial
-    # use_reloader=False prevents Flask from starting twice (important for state)
-    # threaded=False or processes=1 might be necessary if state isn't thread-safe (Ollama interaction might be)
-    # app.run(debug=False, port=5000, threaded=True, use_reloader=False)
+    print("🧠 Initializing Sentiment Engine...")
+    sentiment_service.init_sentiment_model()
 
     # Run in single-threaded mode for debugging LLM connection issues
     print("🚦 Running Flask in single-threaded mode for debugging.")

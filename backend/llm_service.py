@@ -1,10 +1,10 @@
+# backend/llm_service.py
 import requests
 import json
-from backend.config import OLLAMA_API_URL, MODEL_NAME, SYSTEM_PROMPT, SUMMARY_INTERVAL
+# 引入新的配置变量名
+from backend.config import OLLAMA_API_URL, MAIN_MODEL_NAME, XAI_MODEL_NAME, SYSTEM_PROMPT, SUMMARY_INTERVAL
 
 # === 全局存储 - 参与者会话数据隔离 ===
-# Key: participant_id
-# Value: {'history': [...], 'summary': '...', 'turn_count': 0, 'sentiment_scores': []}
 session_data = {}
 
 
@@ -15,14 +15,14 @@ def get_session(participant_id: str) -> dict:
             'history': [],
             'summary': "",
             'full_prompt': "",
-            'turn_count': 0,  # <--- 回合计数器
-            'sentiment_scores': []  # <--- 情绪得分占位符列表
+            'turn_count': 0,
+            'sentiment_scores': []
         }
     return session_data[participant_id]
 
 
 def clear_session(participant_id: str) -> bool:
-    """清除特定参与者的会话历史和摘要 (用于新实验开始时)"""
+    """清除特定参与者的会话历史"""
     if participant_id in session_data:
         del session_data[participant_id]
         print(f"🧹 Session cleared for PID {participant_id}")
@@ -31,8 +31,7 @@ def clear_session(participant_id: str) -> bool:
 
 
 def generate_summary(session: dict):
-    """生成近期对话的简短摘要 (用于上下文记忆)"""
-
+    """生成近期对话摘要 (使用 XAI 小模型以节省资源)"""
     conversation_history = session['history']
     summary_memory = session['summary']
 
@@ -52,12 +51,11 @@ New conversation:
 
 Output the new summary:
 """
-
     try:
         resp = requests.post(
             OLLAMA_API_URL,
             json={
-                "model": MODEL_NAME,
+                "model": XAI_MODEL_NAME,  # 使用小模型做摘要
                 "prompt": summary_prompt,
                 "stream": False
             },
@@ -68,51 +66,85 @@ Output the new summary:
         new_summary = data.get("response", "").strip()
         if new_summary:
             session['summary'] = new_summary
-            # print("✅ [Summary Updated]:", new_summary)
-    except requests.RequestException as e:
-        print(f"⚠️ Failed to generate summary: {e}")
     except Exception as e:
-        print(f"⚠️ An unexpected error occurred during summary generation: {e}")
+        print(f"⚠️ Failed to generate summary: {e}")
+
+
+# --- NEW: XAI 解释生成函数 ---
+def generate_xai_explanation(user_text: str, sentiment_data: dict) -> str:
+    """
+    使用小模型生成 XAI 解释。
+    解释包含：对用户情绪的识别 + AI 意图的简述。
+    """
+    top_emotion = sentiment_data.get("top_emotion", "neutral")
+
+    # 构造 XAI Prompt
+    # 这是一个 Meta-Prompt，让 AI 解释自己的“内部状态”
+    xai_prompt = f"""
+Analyze the following user input and the detected emotion.
+User Input: "{user_text}"
+Detected Emotion: {top_emotion}
+
+Task: Explain briefly (in 1-2 sentences) why you categorize the user's emotion as '{top_emotion}' and what your goal is for the next response to support them. 
+Write the explanation in the third person (e.g., "The system detects...", "The agent aims to...").
+Keep it concise and objective.
+"""
+
+    try:
+        resp = requests.post(
+            OLLAMA_API_URL,
+            json={
+                "model": XAI_MODEL_NAME,  # 使用小模型生成解释
+                "prompt": xai_prompt,
+                "stream": False,
+                "options": {
+                    "temperature": 0.3,  # 保持解释的稳定性
+                    "max_tokens": 100
+                }
+            },
+            timeout=10
+        )
+        if resp.status_code == 200:
+            return resp.json().get("response", "").strip()
+        return "System analysis unavailable."
+    except Exception as e:
+        print(f"⚠️ XAI Gen Error: {e}")
+        return "System analysis unavailable."
 
 
 def get_llm_response_stream(participant_id: str, user_input: str):
     """
-    处理聊天逻辑和 LLM 响应流。
+    处理聊天逻辑和 LLM 响应流 (使用主模型)。
     """
     session = get_session(participant_id)
     conversation_history = session['history']
     summary_memory = session['summary']
 
-    # 1. 将用户输入添加到历史记录 (此历史记录只保留在内存中，不写入文件)
+    # 1. 添加用户输入
     conversation_history.append({"role": "user", "content": user_input})
 
-    # --- 构建完整的提示词 (Prompt) ---
+    # --- 构建 Prompt ---
     full_prompt = ""
-
     if len(conversation_history) == 1:
         full_prompt += SYSTEM_PROMPT + "\n\n"
 
     if summary_memory:
-        full_prompt += f"The following is a summary of previous conversation to help you understand context:\n{summary_memory}\n\n"
+        full_prompt += f"Context Summary:\n{summary_memory}\n\n"
 
     for msg in conversation_history[-10:]:
         prefix = "User:" if msg["role"] == "user" else "AI:"
         full_prompt += f"{prefix} {msg['content']}\n"
 
     full_prompt += "AI:"
-
     session['full_prompt'] = full_prompt
-    # print("\n--- LLM Prompt ---")
-    # print(full_prompt)
-    # print("------------------\n")
 
-    # --- 流式响应 ---
+    # --- 流式响应 (使用 MAIN_MODEL_NAME) ---
     full_ai_reply = ""
     try:
         response = requests.post(
             OLLAMA_API_URL,
             json={
-                "model": MODEL_NAME,
+                "model": MAIN_MODEL_NAME,  # 使用大模型进行对话
                 "prompt": full_prompt,
                 "stream": True
             },
@@ -136,16 +168,12 @@ def get_llm_response_stream(participant_id: str, user_input: str):
                     pass
 
     except requests.RequestException as e:
-        yield f"⚠️ Failed connecting backend LLM: {e}".encode('utf-8')
+        yield f"⚠️ Backend LLM error: {e}".encode('utf-8')
 
     finally:
         if full_ai_reply:
-            # 2. 将完整的 AI 回复添加到历史记录
             conversation_history.append({"role": "ai", "content": full_ai_reply.strip()})
-
-            # --- 新增: 增加回合计数 ---
             session['turn_count'] += 1
-
             if len(conversation_history) % (SUMMARY_INTERVAL * 2) == 0:
                 generate_summary(session)
         print("✅ Streaming Complete")

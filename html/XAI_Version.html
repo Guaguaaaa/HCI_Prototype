@@ -6,55 +6,36 @@
     <meta name="robots" content="noindex, nofollow">
     <title>{{ strings.title }}</title>
     <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
-    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
-    <link rel="shortcut icon" href="/assets/favicon.ico" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
-    <meta name="apple-mobile-web-app-title" content="Peter Guan" />
     <link rel="manifest" href="/assets/site.webmanifest" />
 
     <style>
-        /* --- CSS Styles (Unchanged) --- */
-        /* ... (您的所有 CSS 样式保持不变) ... */
+        /* --- Global & Layout Styles --- */
         body {
             margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: #ffffff;
             color: #333;
             height: 100vh;
-            overflow: hidden; /* Prevent body from scrolling */
+            overflow: hidden;
         }
 
-        /* Main layout container */
         #main-layout {
             display: flex;
             height: 100vh;
             width: 100%;
         }
 
-        /* Left Column: Chat window container */
+        /* --- Left Column: Chat Interface --- */
         #chat-container {
-            flex: 2; /* Takes up 2/3 of the space */
+            flex: 2;
             min-width: 400px;
             background-color: #ffffff;
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            border-right: 1px solid #e0e0e0; /* Visual separator */
         }
 
-        /* Right Column: Side panel */
-        #right-panel {
-            flex: 1; /* Takes up 1/3 of the space */
-            min-width: 300px;
-            background-color: #f8f9fa;
-            border-left: 1px solid #e0e0e0;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-            overflow-y: auto;
-        }
-
-        /* --- Chat Specific Styles (Left Column) --- */
         #chat-log {
             flex-grow: 1;
             padding: 24px;
@@ -100,12 +81,12 @@
         .user-message .avatar { background-color: #007bff; }
         .user-message .content { background-color: #007bff; color: #ffffff; border-top-right-radius: 4px; }
 
+        /* Input Area */
         #chat-form {
             display: flex;
             padding: 16px;
             border-top: 1px solid #e0e0e0;
             background-color: #ffffff;
-            /* --- NEW --- Align items to the bottom */
             align-items: flex-end;
         }
 
@@ -118,12 +99,10 @@
             font-size: 16px;
             margin-right: 12px;
             font-family: inherit;
-
-            /* --- NEW: Style for auto-resize --- */
             line-height: 1.6;
-            max-height: 200px; /* Max height before scrolling */
-            overflow-y: auto; /* Show scrollbar when needed */
-            box-sizing: border-box; /* Include padding in height */
+            max-height: 200px;
+            overflow-y: auto;
+            box-sizing: border-box;
         }
         #user-input:focus {
             outline: none;
@@ -144,71 +123,140 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            /* --- NEW --- Prevent button from shrinking */
             flex-shrink: 0;
         }
         #chat-form button:hover { background-color: #0056b3; }
         #chat-form button:disabled { background-color: #a0c3e8; cursor: not-allowed; }
 
-        /* --- Right Panel Specific Styles --- */
+        /* --- Right Panel: XAI & Emotions --- */
+        #right-panel {
+            flex: 1;
+            min-width: 320px; /* Slightly wider for better layout */
+            background-color: #f8f9fa;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            overflow-y: auto;
+        }
+
+        /* Emoji Section Styles */
         #emoji-section {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             padding-bottom: 24px;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 2px solid #e0e0e0;
         }
 
-        #emoji-display {
-            font-size: 100px;
-            margin-bottom: 20px;
+        /* Large main emoji display */
+        #main-emoji-display {
+            font-size: 80px;
+            margin-bottom: 10px;
             line-height: 1;
+            min-height: 80px; /* Prevent jumping */
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        #emoji-controls {
+        #main-emoji-label {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #555;
+            margin-bottom: 20px;
+            text-transform: capitalize;
+        }
+
+        /* The 7-emotion grid (Dashboard style) */
+        #emoji-grid {
             display: flex;
-            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center; /* 确保第二行居中 */
+            gap: 10px; /* 图标之间的间距 */
+            width: 100%;
         }
 
-        .emoji-btn {
-            font-size: 28px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 8px;
+        .emoji-indicator {
+            font-size: 24px;
+            padding: 10px 0; /* 上下内边距10px，左右0 */
             border-radius: 8px;
-            transition: background-color 0.2s, transform 0.1s;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            opacity: 0.4;
+            transition: all 0.3s ease;
+            cursor: default;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+
+            /* --- 关键修改：强制 4-3 布局 --- */
+            /* 25% 意味着一行最多放下 4 个。减去 10px 是为了留出 gap 的空间 */
+            width: calc(25% - 10px);
+            min-width: 60px; /* 保证最小宽度，防止在极窄屏幕变形 */
+            box-sizing: border-box;
         }
 
-        .emoji-btn:hover {
-            background-color: #dee2e6;
+        .emoji-indicator span {
+            font-size: 0.7rem;
+            margin-top: 4px;
+            color: #888;
         }
 
-        .emoji-btn:active {
-            transform: scale(0.9);
+        /* Active State for Emoji */
+        .emoji-indicator.active {
+            opacity: 1;
+            background-color: #fff;
+            border-color: #3498db;
+            box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+            transform: translateY(-3px);
+        }
+
+        .emoji-indicator.active span {
+            color: #3498db;
+            font-weight: bold;
+        }
+
+        /* Text Explanation Section */
+        #text-section {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
         }
 
         #text-section h2 {
-            font-size: 1.2rem;
-            color: #333;
+            font-size: 1.1rem;
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+            display: inline-block;
+            padding-bottom: 5px;
         }
 
-        #text-section p {
+        #xai-content {
             margin: 0;
             line-height: 1.7;
             color: #495057;
+            font-size: 0.95rem;
+            min-height: 60px;
         }
 
-        /* Message fade-in animation */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* Loading/Processing state for XAI */
+        .processing-text {
+            color: #999;
+            font-style: italic;
+            animation: pulse 1.5s infinite;
         }
 
-        /* --- New Styles for End Dialogue Button and Modal --- */
+        @keyframes pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
 
-        /* Footer to contain input and end button */
+        /* --- Chat Footer & Modal (Same as before) --- */
         .chat-footer {
             display: flex;
             flex-direction: column;
@@ -219,46 +267,39 @@
         }
 
         .end-dialogue-container {
-            /* NEW: 使用 flex 居中按钮 */
             display: flex;
             justify-content: center;
             padding: 5px 0 10px 0;
         }
 
         .end-dialogue-button {
-            /* MODIFIED: 移除 100% 宽度，使用内边距定义大小 */
             width: auto;
             padding: 8px 20px;
-
-            /* MODIFIED: 改为轮廓样式 */
-            background-color: #ffffff; /* 透明背景 */
-            color: #e74c3c; /* 红色文字 */
-            border: 1px solid #e74c3c; /* 红色边框 */
-
-            border-radius: 20px; /* 改为圆角以匹配输入框 */
+            background-color: #ffffff;
+            color: #e74c3c;
+            border: 1px solid #e74c3c;
+            border-radius: 20px;
             cursor: pointer;
-            font-size: 0.9rem; /* 稍微缩小字体 */
+            font-size: 0.9rem;
             font-weight: 600;
-            transition: all 0.2s ease-in-out; /* 平滑过渡 */
+            transition: all 0.2s ease-in-out;
         }
 
         .end-dialogue-button:hover {
-            /* MODIFIED: 悬停时反转颜色 */
             background-color: #e74c3c;
             color: white;
         }
 
-        /* Modal Styles */
+        /* Modal */
         .modal {
-            display: none; /* 默认隐藏 */
+            display: none;
             position: fixed;
-            z-index: 1000; /* 确保在最顶层 */
+            z-index: 1000;
             left: 0;
             top: 0;
             width: 100%;
             height: 100%;
             background-color: rgba(0,0,0,0.6);
-            display: flex; /* 使用 flex 居中 */
             justify-content: center;
             align-items: center;
         }
@@ -270,13 +311,7 @@
             width: 90%;
             max-width: 400px;
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             text-align: center;
-        }
-
-        .modal-content h3 {
-            margin-top: 0;
-            color: #e74c3c;
         }
 
         .modal-buttons {
@@ -284,7 +319,6 @@
             display: flex;
             justify-content: space-around;
         }
-
         .modal-buttons button {
             padding: 10px 20px;
             border: none;
@@ -292,15 +326,12 @@
             cursor: pointer;
             font-weight: 600;
         }
+        #confirm-end-btn { background-color: #e74c3c; color: white; }
+        #cancel-end-btn { background-color: #bdc3c7; color: #333; }
 
-        #confirm-end-btn {
-            background-color: #e74c3c;
-            color: white;
-        }
-
-        #cancel-end-btn {
-            background-color: #bdc3c7;
-            color: #333;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 
@@ -318,8 +349,8 @@
                 </div>
             </div>
         </div>
-        <div class="chat-footer">
 
+        <div class="chat-footer">
             <div class="end-dialogue-container">
                 <button type="button" id="end-dialogue-button" class="end-dialogue-button">
                     {{ strings.end_dialogue_button }}
@@ -328,7 +359,6 @@
 
             <form id="chat-form">
                 <textarea id="user-input" placeholder="{{ strings.input_placeholder }}" rows="1"></textarea>
-
                 <button type="submit" id="send-button">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
                 </button>
@@ -338,18 +368,25 @@
 
     <div id="right-panel">
         <div id="emoji-section">
-            <div id="emoji-display">😊</div>
-            <div id="emoji-controls">
-                <button class="emoji-btn" title="Angry">😠</button>
-                <button class="emoji-btn" title="Sad">😞</button>
-                <button class="emoji-btn" title="Crying">😭</button>
-                <button class="emoji-btn" title="Neutral">😐</button>
-                <button class="emoji-btn" title="Happy">😊</button>
+            <div id="main-emoji-display">😐</div>
+            <div id="main-emoji-label">Neutral</div>
+
+            <div id="emoji-grid">
+                <div class="emoji-indicator" id="emo-anger">😠<span>Anger</span></div>
+                <div class="emoji-indicator" id="emo-disgust">🤢<span>Disgust</span></div>
+                <div class="emoji-indicator" id="emo-fear">😨<span>Fear</span></div>
+                <div class="emoji-indicator" id="emo-joy">😊<span>Joy</span></div>
+                <div class="emoji-indicator active" id="emo-neutral">😐<span>Neutral</span></div>
+                <div class="emoji-indicator" id="emo-sadness">😢<span>Sadness</span></div>
+                <div class="emoji-indicator" id="emo-surprise">😲<span>Surprise</span></div>
             </div>
         </div>
+
         <div id="text-section">
-            <h2>{{ strings.xai_title }}</h2><br>
-            <p>{{ strings.xai_placeholder }}</p>
+            <h2>{{ strings.xai_title }}</h2>
+            <div id="xai-content">
+                <p>{{ strings.xai_placeholder }}</p>
+            </div>
         </div>
     </div>
 </div>
@@ -369,7 +406,7 @@
 <script>
     // --- JavaScript Logic ---
 
-    // --- JS Localization (Injected from Jinja2) ---
+    // --- JS Localization ---
     const JS_PID_ERROR = '{{ strings.js_pid_error }}';
     const JS_STREAM_ERROR = '{{ strings.js_stream_error }}';
     const JS_HTTP_ERROR = '{{ strings.js_http_error }}';
@@ -378,73 +415,129 @@
     const JS_DIALOGUE_END_ERROR = '{{ strings.js_dialogue_end_error }}';
     const JS_MODAL_CONFIRM_TEXT = '{{ strings.modal_confirm_button }}';
 
-    // --- Chat Logic (Left Column) ---
-    // 确保从 Session Storage 中获取 participant_id
-    const participantId = sessionStorage.getItem('participant_id');
+    // --- Mapping Logic (Frontend) ---
+    const EMOJI_MAP = {
+        'anger': '😠',
+        'disgust': '🤢',
+        'fear': '😨',
+        'joy': '😊',
+        'neutral': '😐',
+        'sadness': '😢',
+        'surprise': '😲'
+    };
 
-    if (!participantId) {
-        // Fallback error handling if PID is missing (good practice)
-        console.error(JS_PID_ERROR);
-        // 可以在 UI 提示或重定向到 admin_setup.html
-    }
+    const participantId = sessionStorage.getItem('participant_id');
+    if (!participantId) console.error(JS_PID_ERROR);
 
     const chatForm = document.getElementById('chat-form');
-    const userInput = document.getElementById('user-input'); // This is now a <textarea>
+    const userInput = document.getElementById('user-input');
     const chatLog = document.getElementById('chat-log');
     const sendButton = chatForm.querySelector('button');
 
+    // XAI Elements
+    const mainEmojiDisplay = document.getElementById('main-emoji-display');
+    const mainEmojiLabel = document.getElementById('main-emoji-label');
+    const xaiContent = document.getElementById('xai-content');
+    const emojiIndicators = document.querySelectorAll('.emoji-indicator');
+
+    // --- Helper: Update XAI Panel ---
+    function updateXAI(sentimentData, explanationText) {
+        // 1. Update Sentiment (Emoji)
+        const emotion = sentimentData.top_emotion || 'neutral';
+        const emojiChar = EMOJI_MAP[emotion] || '😐';
+
+        // Update large display
+        mainEmojiDisplay.textContent = emojiChar;
+        mainEmojiDisplay.style.transform = "scale(1.2)"; // Little bounce effect
+        setTimeout(() => mainEmojiDisplay.style.transform = "scale(1)", 300);
+        mainEmojiLabel.textContent = emotion;
+
+        // Update Grid Highlights
+        emojiIndicators.forEach(el => el.classList.remove('active'));
+        const activeEl = document.getElementById(`emo-${emotion}`);
+        if (activeEl) activeEl.classList.add('active');
+
+        // 2. Update Text Explanation
+        if (explanationText) {
+            xaiContent.innerHTML = marked.parse(explanationText);
+        } else {
+            xaiContent.innerHTML = "<p>System analysis unavailable.</p>";
+        }
+    }
+
+    // --- Helper: Set XAI to Loading State ---
+    function setXAILoading() {
+        xaiContent.innerHTML = '<p class="processing-text">Analyzing emotional context...</p>';
+        // Optionally dim the emoji or show a loader
+    }
+
+    // --- Main Chat Logic ---
     chatForm.addEventListener('submit', function(event) {
         event.preventDefault();
         const userText = userInput.value.trim();
         if (userText === '') return;
 
-        // Add the user's message (Fix: now renders as plain text)
+        // 1. UI Updates (User Message)
         appendMessage(userText, 'user');
-
         userInput.value = '';
-        userInput.style.height = 'auto'; // This line now correctly resets the textarea
+        userInput.style.height = 'auto';
         toggleSendButton();
 
-        // AI response (STREAMING + MARKDOWN)
-        const aiParagraph = appendMessage('', 'ai');
-        aiParagraph.innerHTML = '▋'; // Typing cursor
+        // Set XAI panel to loading state
+        setXAILoading();
 
-        let totalResponseText = "";
-
-        // 然后，修改 chatForm.addEventListener('submit', ...) 内部的 fetch 调用：
-        fetch('http://127.0.0.1:5000/chat', {
+        // 2. Trigger XAI Analysis (Parallel Request)
+        // We send this *concurrently* with the chat request
+        fetch('http://127.0.0.1:5000/analyze', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            // 确保在 body 中添加 participant_id
             body: JSON.stringify({
                 message: userText,
                 participant_id: participantId
             })
         })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(JS_HTTP_ERROR + response.status);
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                updateXAI(data.sentiment, data.explanation);
             }
+        })
+        .catch(err => {
+            console.error("XAI Analysis Error:", err);
+            xaiContent.innerHTML = "<p style='color:red; font-size:0.8rem'>Analysis connection failed.</p>";
+        });
+
+        // 3. Trigger Chat Stream (Main Request)
+        const aiParagraph = appendMessage('', 'ai');
+        aiParagraph.innerHTML = '▋'; // Typing cursor
+
+        let totalResponseText = "";
+
+        fetch('http://127.0.0.1:5000/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: userText,
+                participant_id: participantId,
+                explanation_shown: true // Flag for XAI condition
+            })
+        })
+        .then(response => {
+            if (!response.ok) throw new Error(JS_HTTP_ERROR + response.status);
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let isFirstChunk = true;
 
             function readStream() {
                 reader.read().then(({ done, value }) => {
-                    if (done) {
-                        return;
-                    }
+                    if (done) return;
                     if (isFirstChunk) {
-                        aiParagraph.innerHTML = ''; // Clear cursor
+                        aiParagraph.innerHTML = '';
                         isFirstChunk = false;
                     }
-
                     const chunk = decoder.decode(value, { stream: true });
                     totalResponseText += chunk;
-
-                    // AI response is parsed as Markdown
                     aiParagraph.innerHTML = marked.parse(totalResponseText);
-
                     chatLog.scrollTop = chatLog.scrollHeight;
                     readStream();
                 }).catch(error => {
@@ -455,64 +548,38 @@
             readStream();
         })
         .catch(error => {
-            console.error('Error:', error);
+            console.error('Chat Error:', error);
             aiParagraph.innerHTML = JS_CONNECT_ERROR;
         });
     });
 
-    userInput.addEventListener('input', toggleSendButton);
-
-    // --- NEW: Add input event listener for auto-resizing ---
     userInput.addEventListener('input', () => {
-        // Reset height to 'auto' to allow shrinking
         userInput.style.height = 'auto';
-        // Set height to the scroll height (content height)
         userInput.style.height = userInput.scrollHeight + 'px';
+        toggleSendButton();
     });
 
-
-    // --- 输入法 (IME) 提交 ---
-    // This logic is now perfect for a textarea:
-    // Enter = Submit
-    // Shift+Enter = Newline
     userInput.addEventListener('keydown', function(event) {
-        // 检查用户是否仍在使用输入法组合
-        if (event.isComposing) {
-            return;
-        }
-
-        // 如果按下 Enter 键、没有按 Shift 键，并且不在组合状态
+        if (event.isComposing) return;
         if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault(); // 阻止默认的换行
-            chatForm.dispatchEvent(new Event('submit')); // 触发提交
+            event.preventDefault();
+            chatForm.dispatchEvent(new Event('submit'));
         }
     });
 
-    /**
-     * MODIFIED Function to add a message to the chat log
-     * @param {string} text - The message text
-     * @param {string} sender - The sender ('user' or 'ai')
-     * @returns {HTMLElement} - Returns the <p> element where text is stored
-     */
     function appendMessage(text, sender) {
         const messageElement = document.createElement('div');
         messageElement.classList.add('message', `${sender}-message`);
-
         const avatar = document.createElement('div');
         avatar.classList.add('avatar');
         avatar.textContent = sender === 'user' ? 'U' : 'AI';
-
         const content = document.createElement('div');
         content.classList.add('content');
-
         const textParagraph = document.createElement('p');
 
-        // --- 用户输入不渲染Markdown ---
         if (sender === 'user') {
-            // 将用户输入视为纯文本，并替换换行符
             textParagraph.innerHTML = text.replace(/\n/g, '<br>');
         } else {
-            // AI 的输入（初始为空或光标）
             textParagraph.innerHTML = text;
         }
 
@@ -521,90 +588,47 @@
         messageElement.appendChild(content);
         chatLog.appendChild(messageElement);
         chatLog.scrollTop = chatLog.scrollHeight;
-
         return textParagraph;
     }
 
     function toggleSendButton() {
         sendButton.disabled = userInput.value.trim() === '';
     }
-
     toggleSendButton();
 
-    // --- Emoji Logic (Right Column) ---
-    const emojiDisplay = document.getElementById('emoji-display');
-    const emojiButtons = document.querySelectorAll('.emoji-btn');
-
-    emojiButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            emojiDisplay.textContent = button.textContent;
-        });
-    });
-
-    // --- New Dialogue Termination Logic (Unchanged) ---
-
+    // --- End Dialogue Modal Logic ---
     const endDialogueButton = document.getElementById('end-dialogue-button');
     const endDialogueModal = document.getElementById('end-dialogue-modal');
     const confirmEndButton = document.getElementById('confirm-end-btn');
     const cancelEndButton = document.getElementById('cancel-end-btn');
 
-    // Show modal when the end button is clicked
-    endDialogueButton.addEventListener('click', () => {
-        endDialogueModal.style.display = 'flex'; // Use flex to show the modal
-    });
+    endDialogueButton.addEventListener('click', () => { endDialogueModal.style.display = 'flex'; });
+    cancelEndButton.addEventListener('click', () => { endDialogueModal.style.display = 'none'; });
+    window.addEventListener('click', (e) => { if (e.target === endDialogueModal) endDialogueModal.style.display = 'none'; });
 
-    // Hide modal when the cancel button is clicked
-    cancelEndButton.addEventListener('click', () => {
-        endDialogueModal.style.display = 'none';
-    });
-
-    // Hide modal if user clicks outside of the modal content
-    window.addEventListener('click', (event) => {
-        // 检查点击事件的目标是否是 modal 容器本身 (而不是 modal-content)
-        if (event.target === endDialogueModal) {
-            endDialogueModal.style.display = 'none';
-        }
-    });
-
-    // Final confirmation to end dialogue: Calls the backend
     confirmEndButton.addEventListener('click', async () => {
         confirmEndButton.disabled = true;
         confirmEndButton.textContent = JS_MODAL_PROCESSING;
-
-        // 禁用所有 UI 交互以防止重复提交或意外操作
-        const messageInput = document.getElementById('user-input');
-        const sendButton = document.getElementById('send-button');
-        messageInput.disabled = true;
+        userInput.disabled = true;
         sendButton.disabled = true;
         endDialogueButton.disabled = true;
 
         try {
-            // const participantId = sessionStorage.getItem('participant_id');
-
-            // 1. 调用新的后端路由来完成对话并获取下一个 URL
             const response = await fetch('http://127.0.0.1:5000/end_dialogue', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    participant_id: participantId, // <--- 使用外部获取的变量
-                })
+                body: JSON.stringify({ participant_id: participantId })
             });
-
             const apiData = await response.json();
-
             if (apiData.success) {
-                // 2. 重定向到下一个步骤 (Post-Questionnaire)
                 window.location.href = apiData.next_url;
             } else {
-                throw new Error(apiData.error || 'Unknown error during dialogue termination.');
+                throw new Error(apiData.error || 'Unknown error');
             }
-
         } catch (error) {
             console.error('Dialogue End Error:', error);
             alert(JS_DIALOGUE_END_ERROR);
-
-            // 恢复按钮状态，允许用户重试或寻求帮助
-            messageInput.disabled = false;
+            userInput.disabled = false;
             sendButton.disabled = false;
             endDialogueButton.disabled = false;
             confirmEndButton.disabled = false;
@@ -612,7 +636,6 @@
             endDialogueModal.style.display = 'none';
         }
     });
-
 </script>
 
 </body>
