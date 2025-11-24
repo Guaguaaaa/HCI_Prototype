@@ -9,11 +9,11 @@ OLLAMA_API_URL = "http://localhost:11434/api/generate"
 # --- 模型配置 (Hybrid Architecture) ---
 # 主对话模型 (Main Agent): 负责与用户进行共情对话
 # 建议: qwen2.5:14b 或 qwen2.5:7b (根据您的显存情况)
-MAIN_MODEL_NAME = "qwen2.5:1.5b"
+MAIN_MODEL_NAME = "qwen3:1.7b"
 
 # XAI 解释模型 (Explanation Agent): 负责生成简短的内部状态解释
 # 建议: qwen2.5:1.5b 或 llama3.2:3b
-XAI_MODEL_NAME = "qwen2.5:1.5b"
+XAI_MODEL_NAME = "qwen3:1.7b"
 
 # LLM 服务的系统提示 (主对话用)
 SYSTEM_PROMPT = (

@@ -88,32 +88,32 @@ def generate_xai_explanation(user_text: str, sentiment_data: dict) -> str:
     if contains_chinese(user_text):
         # --- 中文 Prompt ---
         xai_prompt = f"""
-请分析以下用户输入和检测到的情绪。
+        请分析以下用户输入和检测到的情绪。
 
-用户输入: "{user_text}"
-检测到的情绪标签: {top_emotion}
+        用户输入: "{user_text}"
+        检测到的情绪标签: {top_emotion}
 
-任务：
-1. 用第三人称（如“系统检测到...”）简要解释为什么系统认为用户处于“{top_emotion}”情绪。
-2. 说明系统在下一条回复中的目标是什么（如“系统旨在...”）。
-3. 解释必须简洁（1-2句话）。
+        任务：
+        1. 用第三人称（如“系统检测到...”）简要解释为什么系统认为用户处于“{top_emotion}”情绪。
+        2. 说明系统在下一条回复中的目标是什么（如“系统旨在...”）。
+        3. 解释必须简洁（1-2句话）。
 
-**强制要求**：必须使用**中文**直接回答，不要翻译用户的话。
-"""
+        **强制要求**：必须使用**中文**直接回答，不要翻译用户的话。
+        """
     else:
         # --- English Prompt ---
         xai_prompt = f"""
-Analyze the following user input and the detected emotion.
-
-User Input: "{user_text}"
-Detected Emotion: {top_emotion}
-
-Task: 
-1. Explain briefly (in 1-2 sentences, third person) why the system categorizes the user's emotion as '{top_emotion}'.
-2. State what the goal is for the next response to support them.
-
-**Constraint**: The explanation MUST be in **English**.
-"""
+        Analyze the following user input and the detected emotion.
+        
+        User Input: "{user_text}"
+        Detected Emotion: {top_emotion}
+        
+        Task: 
+        1. Explain briefly (in 1-2 sentences, third person) why the system categorizes the user's emotion as '{top_emotion}'.
+        2. State what the goal is for the next response to support them.
+        
+        **Constraint**: The explanation MUST be in **English**.
+        """
 
     try:
         resp = requests.post(
