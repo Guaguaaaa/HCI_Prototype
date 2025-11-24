@@ -40,40 +40,51 @@ def calculate_weighted_score(emotion_label: str, confidence: float) -> float:
 def analyze_sentiment(text: str) -> dict:
     """
     使用 LLM 进行 Zero-shot 情感分类。
-    根据输入语言动态切换 Prompt，提高小模型的准确率。
+    针对小模型优化：加入 Few-Shot 示例 (Demonstration) 增强理解力。
     """
     if not text:
         return {"top_emotion": "neutral", "top_score": 0.0, "raw_scores": {}}
 
-    # --- 1. 动态构建 Prompt ---
+    # --- 1. 动态构建 Prompt (加入 Few-Shot 示例) ---
     if contains_chinese(text):
-        # 中文 Prompt
+        # 中文 Prompt - 强化版
         prompt = f"""
-你是一个心理分析专家。请判断以下用户输入中隐含的最主要情绪，并必须从以下列表中选择一个：{EKMAN_EMOTIONS}。
-
-**判断指南**：
-1. **隐含情绪**：不要只看表面词汇。如果用户描述了损失、失败或分离（如“分手”、“挂科”），即使语气平淡，也应归类为 'sadness'。
-2. **中性场景**：只有普通的问候或信息询问才是 'neutral'。
-3. **输出格式**：仅返回一个 JSON 对象。
-
-用户输入: "{text}"
-
-请严格按照此 JSON 格式回答: {{"emotion": "label", "confidence": 0.95}}
-"""
+        你是一个敏锐的心理分析师。请判断用户输入中最主要的情绪。
+        必须从以下 7 类中选择一个: {EKMAN_EMOTIONS}。
+        
+        **参考示例 (Few-Shot Examples)**:
+        - 用户: "你好，我想聊聊天。" -> 标签: neutral
+        - 用户: "我刚刚分手了。" -> 标签: sadness (隐含了失去和痛苦)
+        - 用户: "这简直不可理喻！" -> 标签: anger
+        - 用户: "我真的很担心明天的考试。" -> 标签: fear
+        - 用户: "没想到是你！" -> 标签: surprise
+        
+        **当前用户输入**: "{text}"
+        
+        **要求**:
+        1. 如果用户陈述了负面事件（如分手、失败、生病），即使语气平静，也必须标记为负面情绪（如 sadness 或 fear），绝不能标为 neutral。
+        2. 仅返回 JSON。
+        
+        Response format: {{"emotion": "label", "confidence": 0.95}}
+        """
     else:
-        # 英文 Prompt
+        # 英文 Prompt - 强化版
         prompt = f"""
-You are an expert psychological analyst. Classify the underlying emotion of the following user input into EXACTLY ONE of these categories: {EKMAN_EMOTIONS}.
-
-**Guidelines:**
-1. **Implicit Emotion**: Look beyond keywords. If the user describes a loss (e.g., "break up", "failed"), it is 'sadness' even without sad words.
-2. **Context**: Greetings or simple questions are 'neutral'. 
-3. **Output Format**: Respond ONLY with a JSON object.
-
-User Input: "{text}"
-
-Response format: {{"emotion": "label", "confidence": 0.95}}
-"""
+        You are a psychological analyst. Classify the dominant emotion of the user input into EXACTLY ONE of: {EKMAN_EMOTIONS}.
+        
+        **Examples**:
+        - User: "Hi, can we talk?" -> Label: neutral
+        - User: "I just broke up." -> Label: sadness (Implicit loss implies sadness)
+        - User: "This is ridiculous!" -> Label: anger
+        - User: "I am worried about the test." -> Label: fear
+        
+        **Current User Input**: "{text}"
+        
+        **Guideline**:
+        If the user describes a negative event (e.g., break up, failure), label it as 'sadness' or 'fear', NOT 'neutral'.
+        
+        Response format: {{"emotion": "label", "confidence": 0.95}}
+        """
 
     # --- 2. 调用 LLM ---
     try:

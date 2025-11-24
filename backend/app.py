@@ -692,8 +692,9 @@ if __name__ == "__main__":
     print("🧠 Initializing Sentiment Engine...")
     sentiment_service.init_sentiment_model()
 
-    # Run in single-threaded mode for debugging LLM connection issues
-    print("🚦 Running Flask in single-threaded mode for debugging.")
-    app.run(debug=False, port=5000, threaded=False, use_reloader=False)
+    # backend/app.py (修改后)
+    print("🚦 Running Flask in MULTI-THREADED mode.")
+    # 允许并发处理 /chat 和 /analyze
+    app.run(debug=False, port=5000, threaded=True, use_reloader=False)
 
     # run on "http://127.0.0.1:5000/html/admin_setup.html"
