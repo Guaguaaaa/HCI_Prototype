@@ -33,7 +33,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            border-right: 1px solid #e0e0e0; /* Visual separator */
+            border-right: 1px solid #e0e0e0;
         }
 
         #chat-log {
@@ -131,7 +131,7 @@
         /* --- Right Panel: XAI & Emotions --- */
         #right-panel {
             flex: 1;
-            min-width: 320px; /* Slightly wider for better layout */
+            min-width: 320px;
             background-color: #f8f9fa;
             padding: 30px;
             display: flex;
@@ -140,7 +140,6 @@
             overflow-y: auto;
         }
 
-        /* Emoji Section Styles */
         #emoji-section {
             display: flex;
             flex-direction: column;
@@ -150,12 +149,11 @@
             border-bottom: 2px solid #e0e0e0;
         }
 
-        /* Large main emoji display */
         #main-emoji-display {
             font-size: 80px;
             margin-bottom: 10px;
             line-height: 1;
-            min-height: 80px; /* Prevent jumping */
+            min-height: 80px;
             transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
@@ -164,21 +162,21 @@
             font-weight: 700;
             color: #555;
             margin-bottom: 20px;
-            text-transform: capitalize;
+            /* Removed text-transform to respect Chinese characters */
         }
 
-        /* The 7-emotion grid (Dashboard style) */
+        /* The 7-emotion grid (4-3 Layout) */
         #emoji-grid {
             display: flex;
             flex-wrap: wrap;
-            justify-content: center; /* 确保第二行居中 */
-            gap: 10px; /* 图标之间的间距 */
+            justify-content: center;
+            gap: 10px;
             width: 100%;
         }
 
         .emoji-indicator {
             font-size: 24px;
-            padding: 10px 0; /* 上下内边距10px，左右0 */
+            padding: 10px 0;
             border-radius: 8px;
             background-color: #fff;
             border: 1px solid #ddd;
@@ -189,20 +187,29 @@
             flex-direction: column;
             align-items: center;
 
-            /* --- 关键修改：强制 4-3 布局 --- */
-            /* 25% 意味着一行最多放下 4 个。减去 10px 是为了留出 gap 的空间 */
+            /* 4-3 Layout Logic */
             width: calc(25% - 10px);
-            min-width: 60px; /* 保证最小宽度，防止在极窄屏幕变形 */
+            min-width: 60px;
             box-sizing: border-box;
         }
 
-        .emoji-indicator span {
+        /* Emotion Label (Localized) */
+        .emoji-indicator .label {
             font-size: 0.7rem;
             margin-top: 4px;
             color: #888;
+            font-weight: 500;
         }
 
-        /* Active State for Emoji */
+        /* Percentage Score */
+        .emoji-indicator .score {
+            font-size: 0.75rem;
+            color: #aaa;
+            margin-top: 2px;
+            font-variant-numeric: tabular-nums; /* Keeps numbers aligned */
+        }
+
+        /* Active State */
         .emoji-indicator.active {
             opacity: 1;
             background-color: #fff;
@@ -211,12 +218,16 @@
             transform: translateY(-3px);
         }
 
-        .emoji-indicator.active span {
+        .emoji-indicator.active .label {
             color: #3498db;
             font-weight: bold;
         }
 
-        /* Text Explanation Section */
+        .emoji-indicator.active .score {
+            color: #3498db;
+            font-weight: bold;
+        }
+
         #text-section {
             background-color: #fff;
             padding: 20px;
@@ -243,7 +254,6 @@
             min-height: 60px;
         }
 
-        /* Loading/Processing state for XAI */
         .processing-text {
             color: #999;
             font-style: italic;
@@ -256,7 +266,7 @@
             100% { opacity: 0.5; }
         }
 
-        /* --- Chat Footer & Modal (Same as before) --- */
+        /* --- Footer & Modal --- */
         .chat-footer {
             display: flex;
             flex-direction: column;
@@ -285,12 +295,8 @@
             transition: all 0.2s ease-in-out;
         }
 
-        .end-dialogue-button:hover {
-            background-color: #e74c3c;
-            color: white;
-        }
+        .end-dialogue-button:hover { background-color: #e74c3c; color: white; }
 
-        /* Modal */
         .modal {
             display: none;
             position: fixed;
@@ -369,16 +375,28 @@
     <div id="right-panel">
         <div id="emoji-section">
             <div id="main-emoji-display">😐</div>
-            <div id="main-emoji-label">Neutral</div>
-
-            <div id="emoji-grid">
-                <div class="emoji-indicator" id="emo-anger">😠<span>Anger</span></div>
-                <div class="emoji-indicator" id="emo-disgust">🤢<span>Disgust</span></div>
-                <div class="emoji-indicator" id="emo-fear">😨<span>Fear</span></div>
-                <div class="emoji-indicator" id="emo-joy">😊<span>Joy</span></div>
-                <div class="emoji-indicator active" id="emo-neutral">😐<span>Neutral</span></div>
-                <div class="emoji-indicator" id="emo-sadness">😢<span>Sadness</span></div>
-                <div class="emoji-indicator" id="emo-surprise">😲<span>Surprise</span></div>
+            <div id="main-emoji-label">{{ strings.emotion_neutral }}</div> <div id="emoji-grid">
+                <div class="emoji-indicator" id="emo-anger">
+                    😠<span class="label">{{ strings.emotion_anger }}</span><span class="score">0%</span>
+                </div>
+                <div class="emoji-indicator" id="emo-disgust">
+                    🤢<span class="label">{{ strings.emotion_disgust }}</span><span class="score">0%</span>
+                </div>
+                <div class="emoji-indicator" id="emo-fear">
+                    😨<span class="label">{{ strings.emotion_fear }}</span><span class="score">0%</span>
+                </div>
+                <div class="emoji-indicator" id="emo-joy">
+                    😊<span class="label">{{ strings.emotion_joy }}</span><span class="score">0%</span>
+                </div>
+                <div class="emoji-indicator active" id="emo-neutral">
+                    😐<span class="label">{{ strings.emotion_neutral }}</span><span class="score">0%</span>
+                </div>
+                <div class="emoji-indicator" id="emo-sadness">
+                    😢<span class="label">{{ strings.emotion_sadness }}</span><span class="score">0%</span>
+                </div>
+                <div class="emoji-indicator" id="emo-surprise">
+                    😲<span class="label">{{ strings.emotion_surprise }}</span><span class="score">0%</span>
+                </div>
             </div>
         </div>
 
@@ -442,22 +460,47 @@
 
     // --- Helper: Update XAI Panel ---
     function updateXAI(sentimentData, explanationText) {
-        // 1. Update Sentiment (Emoji)
         const emotion = sentimentData.top_emotion || 'neutral';
+        const scores = sentimentData.ekman_scores || {};
+
+        // 1. Update Large Emoji Display
         const emojiChar = EMOJI_MAP[emotion] || '😐';
-
-        // Update large display
         mainEmojiDisplay.textContent = emojiChar;
-        mainEmojiDisplay.style.transform = "scale(1.2)"; // Little bounce effect
+        mainEmojiDisplay.style.transform = "scale(1.2)";
         setTimeout(() => mainEmojiDisplay.style.transform = "scale(1)", 300);
-        mainEmojiLabel.textContent = emotion;
 
-        // Update Grid Highlights
-        emojiIndicators.forEach(el => el.classList.remove('active'));
-        const activeEl = document.getElementById(`emo-${emotion}`);
-        if (activeEl) activeEl.classList.add('active');
+        // Update Main Label (Smartly grab the localized text from the grid!)
+        const activeIndicator = document.getElementById(`emo-${emotion}`);
+        if (activeIndicator) {
+            const localizedText = activeIndicator.querySelector('.label').textContent;
+            mainEmojiLabel.textContent = localizedText;
+        } else {
+            mainEmojiLabel.textContent = emotion; // Fallback
+        }
 
-        // 2. Update Text Explanation
+        // 2. Update Grid Indicators & Scores
+        emojiIndicators.forEach(el => {
+            el.classList.remove('active');
+
+            // Get emotion key from ID (e.g., "emo-anger" -> "anger")
+            const emoKey = el.id.replace('emo-', '');
+            const rawScore = scores[emoKey] || 0;
+
+            // Calculate Percentage (Cap at 100% to prevent confusion)
+            // Using simple clamping since aggregation can exceed 1.0
+            const percentage = Math.min(100, Math.round(rawScore * 100));
+
+            // Update Score Text
+            const scoreSpan = el.querySelector('.score');
+            if (scoreSpan) {
+                scoreSpan.textContent = percentage + '%';
+            }
+        });
+
+        // Highlight Active Emotion
+        if (activeIndicator) activeIndicator.classList.add('active');
+
+        // 3. Update Text Explanation
         if (explanationText) {
             xaiContent.innerHTML = marked.parse(explanationText);
         } else {

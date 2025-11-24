@@ -392,7 +392,6 @@ LOCALIZATION_STRINGS = {
 
     # --- chat_interface ---
     "chat_interface": {
-        # ... (此模块内容保持不变) ...
         "en": {
             "title": "Chat Interface",
             "welcome_message": "Hello! How can I help you today? Please feel free to share your thoughts.",
@@ -406,6 +405,15 @@ LOCALIZATION_STRINGS = {
 
             "xai_title": "AI Explanation Panel",
             "xai_placeholder": "This panel will show explanations (XAI) about the AI's internal state or decisions after you send a message.",
+
+            "emotion_anger": "Anger",
+            "emotion_disgust": "Disgust",
+            "emotion_fear": "Fear",
+            "emotion_joy": "Joy",
+            "emotion_neutral": "Neutral",
+            "emotion_sadness": "Sadness",
+            "emotion_surprise": "Surprise",
+            # -------------------------------------
 
             "js_pid_error": "Participant ID not found in sessionStorage. Cannot proceed.",
             "js_stream_error": "Error reading streaming message",
@@ -427,6 +435,15 @@ LOCALIZATION_STRINGS = {
 
             "xai_title": "AI 解释面板",
             "xai_placeholder": "当您发送消息后，此面板将显示有关 AI 内部状态或决策的解释 (XAI)。",
+
+            "emotion_anger": "愤怒",
+            "emotion_disgust": "厌恶",
+            "emotion_fear": "恐惧",
+            "emotion_joy": "快乐",
+            "emotion_neutral": "中性",
+            "emotion_sadness": "悲伤",
+            "emotion_surprise": "惊讶",
+            # -------------------------------------
 
             "js_pid_error": "在 sessionStorage 中未找到参与者ID。无法继续。",
             "js_stream_error": "⚠️ 读取响应流时出错。",
