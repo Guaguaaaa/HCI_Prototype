@@ -123,12 +123,22 @@
     const LOADING_TEXT = '{{ strings.saving_data | default("Saving Data...", true) }}';
     const BUTTON_READY_TEXT = '{{ strings.button_ready_text | default("Start Next Session", true) }}';
     const ERROR_EARLY_SUBMIT = '{{ strings.error_early_submit | default("Please wait for the full 5-minute break.", true) }}';
+    const KONAMI_UNLOCK_TEXT = '{{ strings.konami_unlocked | default("Washout skipped. You can continue now.", true) }}';
 
     // 确保从 Session Storage 中获取 participant_id
     const participantId = sessionStorage.getItem('participant_id');
 
     let timerInterval;
     let secondsRemaining = 300; // 5 minutes
+    let washoutSkipped = false;
+    const KONAMI_CODE = [
+        'ArrowUp', 'ArrowUp',
+        'ArrowDown', 'ArrowDown',
+        'ArrowLeft', 'ArrowRight',
+        'ArrowLeft', 'ArrowRight',
+        'b', 'a'
+    ];
+    let konamiProgress = 0;
 
     if (!participantId) {
         errorMessage.textContent = '{{ strings.error_pid_missing | default("Error: PID missing.", true) }}';
@@ -164,11 +174,39 @@
         submitButton.textContent = BUTTON_READY_TEXT;
     }
 
+    function unlockWashoutByKonami() {
+        washoutSkipped = true;
+        secondsRemaining = 0;
+        if (timerInterval) {
+            clearInterval(timerInterval);
+        }
+        timerDisplay.textContent = "00:00";
+        enableButton();
+        errorMessage.textContent = KONAMI_UNLOCK_TEXT;
+        errorMessage.style.display = 'block';
+    }
+
+    document.addEventListener('keydown', function(event) {
+        const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+        const expectedKey = KONAMI_CODE[konamiProgress];
+
+        if (key === expectedKey) {
+            konamiProgress += 1;
+            if (konamiProgress === KONAMI_CODE.length) {
+                konamiProgress = 0;
+                unlockWashoutByKonami();
+            }
+            return;
+        }
+
+        konamiProgress = key === KONAMI_CODE[0] ? 1 : 0;
+    });
+
     form.addEventListener('submit', function(event) {
         event.preventDefault();
 
         // (Frontend check, though backend does the real validation)
-        if (secondsRemaining > 0) {
+        if (secondsRemaining > 0 && !washoutSkipped) {
             errorMessage.textContent = ERROR_EARLY_SUBMIT;
             errorMessage.style.display = 'block';
             return;
@@ -187,7 +225,8 @@
                 participant_id: participantId,
                 step_name: CURRENT_STEP_NAME,
                 data: {
-                    "frontend_timer_complete": true
+                    "frontend_timer_complete": !washoutSkipped,
+                    "skip_washout": washoutSkipped
                 },
                 current_step_index: CURRENT_STEP_INDEX
             })

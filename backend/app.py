@@ -329,8 +329,9 @@ def save_data():
                 return jsonify({"error": "Washout start time missing."}), 400
 
             duration = time.time() - start_ts
+            skip_washout = bool(step_data.get("skip_washout"))
 
-            if duration < 300:  # 强制 5 分钟
+            if duration < 300 and not skip_washout:  # 强制 5 分钟，除非触发隐藏跳过
                 print(f"Info: PID {participant_id} tried to submit Washout early ({duration:.1f}s). Denied.")
                 return jsonify({"success": False,
                                 "error": get_localization_for_page("washout", status.get("language", "en")).get(
@@ -339,7 +340,13 @@ def save_data():
             # Washout 验证通过
             step_data["duration_seconds"] = round(duration, 2)
             step_data["washout_start_ts"] = start_ts
-            print(f"✅ Washout complete for PID {participant_id} after {duration:.1f}s.")
+            step_data["skip_washout"] = skip_washout
+
+            if skip_washout:
+                step_data["skip_method"] = "konami_code"
+                print(f"✅ Washout skipped for PID {participant_id} after {duration:.1f}s via Konami Code.")
+            else:
+                print(f"✅ Washout complete for PID {participant_id} after {duration:.1f}s.")
 
             # (NEW) 清除 LLM 会话并更新到下一个 condition
             llm_service.clear_session(participant_id)
