@@ -174,5 +174,5 @@ backend/.env
 
 .idea/
 
-.data/
- AGENTS.md
+data/
+AGENTS.md
