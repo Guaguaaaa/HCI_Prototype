@@ -1,9 +1,14 @@
 # backend/llm_service.py
-import requests
-import json
 import re
-# 引入配置
-from backend.config import OLLAMA_API_URL, MAIN_MODEL_NAME, XAI_MODEL_NAME, SYSTEM_PROMPT, SUMMARY_INTERVAL
+from google import genai
+from google.genai import types
+
+from backend.config import GEMINI_API_KEY, GEMINI_MODEL_NAME, SYSTEM_PROMPT, SUMMARY_INTERVAL
+
+_client = genai.Client(api_key=GEMINI_API_KEY)
+
+# Exposed for compatibility with app.py references
+XAI_MODEL_NAME = GEMINI_MODEL_NAME
 
 # === 全局存储 - 参与者会话数据隔离 ===
 session_data = {}
@@ -36,8 +41,23 @@ def contains_chinese(text: str) -> bool:
     return bool(re.search(r'[\u4e00-\u9fff]', text))
 
 
+def _build_contents(conversation_history: list) -> list:
+    """Convert internal history format to Gemini contents format.
+    Gemini requires the list to start with a user turn and alternate roles."""
+    recent = conversation_history[-10:]
+    # Drop any leading model turns so the list starts with a user turn
+    start = next((i for i, m in enumerate(recent) if m["role"] == "user"), 0)
+    return [
+        types.Content(
+            role="model" if m["role"] == "ai" else "user",
+            parts=[types.Part(text=m["content"])]
+        )
+        for m in recent[start:]
+    ]
+
+
 def generate_summary(session: dict):
-    """生成近期对话摘要 (使用 XAI 小模型以节省资源)"""
+    """生成近期对话摘要"""
     conversation_history = session['history']
     summary_memory = session['summary']
 
@@ -46,7 +66,7 @@ def generate_summary(session: dict):
     )
 
     summary_prompt = f"""
-Please summarize the following conversation into a concise summary of no more than 150 words. 
+Please summarize the following conversation into a concise summary of no more than 150 words.
 Focus on the user's main emotions, topics, and intents. Keep the summary in English.
 
 Previous summary (if any):
@@ -58,35 +78,25 @@ New conversation:
 Output the new summary:
 """
     try:
-        resp = requests.post(
-            OLLAMA_API_URL,
-            json={
-                "model": XAI_MODEL_NAME,  # 使用小模型做摘要
-                "prompt": summary_prompt,
-                "stream": False
-            },
-            timeout=120
+        response = _client.models.generate_content(
+            model=GEMINI_MODEL_NAME,
+            contents=summary_prompt
         )
-        resp.raise_for_status()
-        data = resp.json()
-        new_summary = data.get("response", "").strip()
+        new_summary = response.text.strip()
         if new_summary:
             session['summary'] = new_summary
     except Exception as e:
         print(f"⚠️ Failed to generate summary: {e}")
 
 
-# --- XAI 解释生成函数 (动态 Prompt 语言) ---
 def generate_xai_explanation(user_text: str, sentiment_data: dict) -> str:
     """
-    使用小模型生成 XAI 解释。
+    使用 Gemini 生成 XAI 解释。
     根据用户输入的语言动态切换 Prompt 语言，确保输出语言一致。
     """
     top_emotion = sentiment_data.get("top_emotion", "neutral")
 
-    # 1. 语言检测与 Prompt 分流
     if contains_chinese(user_text):
-        # --- 中文 Prompt ---
         xai_prompt = f"""
         请分析以下用户输入和检测到的情绪。
 
@@ -94,53 +104,45 @@ def generate_xai_explanation(user_text: str, sentiment_data: dict) -> str:
         检测到的情绪标签: {top_emotion}
 
         任务：
-        1. 用第三人称（如“系统检测到...”）简要解释为什么系统认为用户处于“{top_emotion}”情绪。
-        2. 说明系统在下一条回复中的目标是什么（如“系统旨在...”）。
+        1. 用第三人称（如"系统检测到..."）简要解释为什么系统认为用户处于"{top_emotion}"情绪。
+        2. 说明系统在下一条回复中的目标是什么（如"系统旨在..."）。
         3. 解释必须简洁（1-2句话）。
 
         **强制要求**：必须使用**中文**直接回答，不要翻译用户的话。
         """
     else:
-        # --- English Prompt ---
         xai_prompt = f"""
         Analyze the following user input and the detected emotion.
-        
+
         User Input: "{user_text}"
         Detected Emotion: {top_emotion}
-        
-        Task: 
+
+        Task:
         1. Explain briefly (in 1-2 sentences, third person) why the system categorizes the user's emotion as '{top_emotion}'.
         2. State what the goal is for the next response to support them.
-        
+
         **Constraint**: The explanation MUST be in **English**.
         """
 
     try:
-        resp = requests.post(
-            OLLAMA_API_URL,
-            json={
-                "model": XAI_MODEL_NAME,  # 使用小模型生成解释
-                "prompt": xai_prompt,
-                "stream": False,
-                "options": {
-                    "temperature": 0.3,
-                    "max_tokens": 150
-                }
-            },
-            timeout=10
+        response = _client.models.generate_content(
+            model=GEMINI_MODEL_NAME,
+            contents=xai_prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.3,
+                max_output_tokens=512,
+                thinking_config=types.ThinkingConfig(thinking_budget=0)
+            )
         )
-        if resp.status_code == 200:
-            return resp.json().get("response", "").strip()
-        return "System analysis unavailable."
+        return response.text.strip()
     except Exception as e:
         print(f"⚠️ XAI Gen Error: {e}")
         return "System analysis unavailable."
 
 
-# --- MODIFIED: 主对话生成函数 (动态 System Prompt) ---
 def get_llm_response_stream(participant_id: str, user_input: str):
     """
-    处理聊天逻辑和 LLM 响应流 (使用主模型)。
+    处理聊天逻辑和 Gemini 流式响应 (使用主模型)。
     """
     session = get_session(participant_id)
     conversation_history = session['history']
@@ -150,67 +152,38 @@ def get_llm_response_stream(participant_id: str, user_input: str):
     conversation_history.append({"role": "user", "content": user_input})
 
     # 2. 动态决定 System Prompt (语言跟随)
-    # 如果检测到中文输入，强制使用中文 System Prompt
     if contains_chinese(user_input):
-        current_system_prompt = (
+        system_inst = (
             "你是一个温柔且富有同理心的对话伙伴。"
             "请始终以自然、像人一样的方式回应。"
             "请务必使用中文进行回复。"
             "不要评价用户的语言能力。"
         )
     else:
-        # 英文输入则使用默认配置 (英文)
-        current_system_prompt = SYSTEM_PROMPT
-
-    # 3. 构建 Prompt
-    full_prompt = ""
-
-    # --- FIX: 始终在 Prompt 开头包含 System Prompt ---
-    # 之前的逻辑是只在 len==1 时添加，导致后续轮次 System Prompt 丢失
-    full_prompt += current_system_prompt + "\n\n"
+        system_inst = SYSTEM_PROMPT
 
     if summary_memory:
-        full_prompt += f"Context Summary:\n{summary_memory}\n\n"
+        system_inst += f"\n\n[Conversation Context Summary]\n{summary_memory}"
 
-    for msg in conversation_history[-10:]:
-        prefix = "User:" if msg["role"] == "user" else "AI:"
-        full_prompt += f"{prefix} {msg['content']}\n"
+    # 3. 构建 Gemini contents
+    contents = _build_contents(conversation_history)
 
-    full_prompt += "AI:"
+    # 供调试查看
+    session['full_prompt'] = f"[system]\n{system_inst}\n\n[contents]\n{contents}"
 
-    # 存入 Session 仅供调试查看
-    session['full_prompt'] = full_prompt
-
-    # --- 流式响应 (使用 MAIN_MODEL_NAME) ---
+    # 4. 流式响应
     full_ai_reply = ""
     try:
-        response = requests.post(
-            OLLAMA_API_URL,
-            json={
-                "model": MAIN_MODEL_NAME,
-                "prompt": full_prompt,
-                "stream": True
-            },
-            stream=True,
-            timeout=300
-        )
-        response.raise_for_status()
+        for chunk in _client.models.generate_content_stream(
+            model=GEMINI_MODEL_NAME,
+            contents=contents,
+            config=types.GenerateContentConfig(system_instruction=system_inst)
+        ):
+            if chunk.text:
+                full_ai_reply += chunk.text
+                yield chunk.text.encode('utf-8')
 
-        for line in response.iter_lines():
-            if line:
-                try:
-                    json_line = line.decode('utf-8')
-                    data = json.loads(json_line)
-                    text_chunk = data.get("response", "")
-                    if text_chunk:
-                        full_ai_reply += text_chunk
-                        yield text_chunk.encode('utf-8')
-                    if data.get("done", False):
-                        break
-                except json.JSONDecodeError:
-                    pass
-
-    except requests.RequestException as e:
+    except Exception as e:
         yield f"⚠️ Backend LLM error: {e}".encode('utf-8')
 
     finally:
