@@ -128,7 +128,11 @@ def generate_xai_explanation(user_text: str, sentiment_data: dict) -> str:
         response = _client.models.generate_content(
             model=GEMINI_MODEL_NAME,
             contents=xai_prompt,
-            config=types.GenerateContentConfig(temperature=0.3, max_output_tokens=150)
+            config=types.GenerateContentConfig(
+                temperature=0.3,
+                max_output_tokens=512,
+                thinking_config=types.ThinkingConfig(thinking_budget=0)
+            )
         )
         return response.text.strip()
     except Exception as e:
