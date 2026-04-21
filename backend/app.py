@@ -6,8 +6,6 @@ from flask_cors import CORS
 
 import json
 import time
-from datetime import datetime
-import csv
 import numpy as np
 
 from backend import llm_service
@@ -376,22 +374,12 @@ def save_data():
         if not data_manager.update_participant_step(participant_id, next_step_index):
             return jsonify({"error": "Failed to update participant step."}), 500
 
-        # --- (NEW) Washout 开始时间戳记录 ---
+        # --- Washout 开始时间戳记录 ---
         if step_name == "POST_QUESTIONNAIRE_1":
-            try:
-                status_path = os.path.join(data_manager.DATA_DIR, f"P_{participant_id}_status.json")
-                status_data = data_manager.get_participant_status(participant_id)  # 重新读取以获取最新的 index
-                if status_data.get("current_step_index") == EXPERIMENT_STEPS.index("WASHOUT"):  # 确认已进入 Washout 步骤
-                    status_data["washout_start_ts"] = time.time()
-                    with open(status_path, 'w', encoding='utf-8') as f:
-                        json.dump(status_data, f, ensure_ascii=False, indent=4)
-                    print(f"⏱️ Washout timer started for PID {participant_id}")
-                else:
-                    print(
-                        f"Warning: Did not record washout_start_ts for {participant_id}. Expected index {EXPERIMENT_STEPS.index('WASHOUT')}, got {status_data.get('current_step_index')}")
-            except Exception as e:
-                print(f"Error recording washout_start_ts for {participant_id}: {e}")
-                # 不阻止流程，但记录错误
+            status_data = data_manager.get_participant_status(participant_id)
+            if status_data.get("current_step_index") == EXPERIMENT_STEPS.index("WASHOUT"):
+                data_manager.record_washout_start(participant_id, time.time())
+                print(f"⏱️ Washout timer started for PID {participant_id}")
 
         # 4. 确定下一个页面的 URL (使用更新后的状态)
         status = data_manager.get_participant_status(participant_id)  # 确保使用最新状态
@@ -638,40 +626,8 @@ def end_dialogue():
         return jsonify({"error": "Internal server error."}), 500
 
 
-# (save_contact 和 save_contact_to_separate_file 保持不变)
-CONTACT_FILE = os.path.join(data_manager.DATA_DIR, "follow_up_contacts.csv")
-
-
-def save_contact_to_separate_file(participant_id: str, email: str):
-    """
-    将联系信息写入一个与主要匿名数据分离的 CSV 文件。
-    """
-    header = ["timestamp", "participant_id", "email"]
-    # Ensure timestamp matches the format expected if read by spreadsheet software
-    timestamp_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    data = [timestamp_str, participant_id, email]
-
-    file_exists = os.path.exists(CONTACT_FILE)
-
-    try:
-        with open(CONTACT_FILE, 'a', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            if not file_exists or os.path.getsize(CONTACT_FILE) == 0:  # Check size too
-                writer.writerow(header)
-            writer.writerow(data)
-
-        print(f"✅ Contact data saved separately for PID {participant_id}")
-        return True
-    except Exception as e:
-        print(f"❌ Failed to save contact data: {e}")
-        return False
-
-
 @app.route('/save_contact', methods=['POST'])
 def save_contact():
-    """
-    用于接收访谈联系信息，并将数据写入与问卷分离的单独文件。
-    """
     try:
         data = request.json
         participant_id = data.get("participant_id")
@@ -680,10 +636,10 @@ def save_contact():
         if not participant_id or not email:
             return jsonify({"error": "Missing participant_id or email"}), 400
 
-        if save_contact_to_separate_file(participant_id, email):
+        if data_manager.save_contact_email(participant_id, email):
             return jsonify({"success": True})
         else:
-            return jsonify({"error": "Failed to write contact file."}), 500
+            return jsonify({"error": "Failed to save contact data to DB."}), 500
 
     except Exception as e:
         print(f"Error in /save_contact: {e}")
@@ -693,7 +649,7 @@ def save_contact():
 # (运行 Flask 服务器的 main 保持不变)
 if __name__ == "__main__":
     print("🚀 Starting Flask server on http://127.0.0.1:5000")
-    print(f"💾 Data will be saved to: {data_manager.DATA_DIR}")
+    print("💾 Data will be saved to: MongoDB Atlas (hci_experiment)")
     print(f"🔄 Experiment Flow Steps: {EXPERIMENT_STEPS}")
 
     print("🧠 Initializing Sentiment Engine...")
