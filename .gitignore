@@ -170,9 +170,13 @@ $RECYCLE.BIN/
 # End of https://www.toptal.com/developers/gitignore/api/macos,windows,jetbrains+all,visualstudiocode
 
 # environment
+.env
 backend/.env
 
 .idea/
 
 data/
 AGENTS.md
+CLAUDE.md
+
+account.txt
