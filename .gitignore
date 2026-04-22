@@ -180,3 +180,7 @@ AGENTS.md
 CLAUDE.md
 
 account.txt
+
+# python
+__pycache__/
+*.pyc
