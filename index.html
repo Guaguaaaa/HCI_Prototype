@@ -200,11 +200,11 @@
         participantId = urlParams.get('pid');
 
         if (!participantId) {
-            // If no PID, redirect to Admin Setup
-            pidDisplay.textContent = ERROR_PID_MISSING.replace('Please start over.', 'Redirecting to setup...');
+            // If no PID, redirect to the public landing page
+            pidDisplay.textContent = ERROR_PID_MISSING.replace('Please start over.', 'Redirecting to the study landing page...');
             pidDisplay.style.color = 'red';
             setTimeout(() => {
-                window.location.href = '/html/admin_setup.html';
+                window.location.href = '/landing';
             }, 3000);
             return false;
         }
@@ -223,7 +223,7 @@
         event.preventDefault();
 
         if (!participantId) {
-            errorMessage.textContent = ERROR_PID_MISSING.replace('Please start over.', 'Session not initialized. Please restart from Admin Setup.');
+            errorMessage.textContent = ERROR_PID_MISSING.replace('Please start over.', 'Session not initialized. Please restart from the study landing page.');
             errorMessage.style.display = 'block';
             return;
         }

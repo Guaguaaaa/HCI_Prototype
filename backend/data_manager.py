@@ -162,7 +162,7 @@ def init_participant_session(participant_id: str, condition_order: str, language
         return "/html/demographics.html"
     except Exception as e:
         print(f"❌ Failed to init session status: {e}")
-        return "/html/admin_setup.html?error=db_error"
+        return "/landing?error=db_error"
 
 
 def _hash_invite_token(token: str) -> str:

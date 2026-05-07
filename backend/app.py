@@ -147,9 +147,13 @@ def participant_status_or_error(participant_id: str):
 # --- 静态文件服务路由 ---
 @app.route('/')
 def root():
-    """根路由：重定向到 admin_setup 或 index.html (带 pid)"""
-    # 简单地重定向到 admin_setup 作为默认入口
-    return redirect('/html/admin_setup.html')
+    """Public root route."""
+    return redirect('/landing')
+
+
+@app.route('/landing')
+def landing_page():
+    return send_from_directory(os.path.join(app.static_folder, 'html'), 'landing.html')
 
 
 @app.route('/index.html')
@@ -160,7 +164,7 @@ def serve_index():
     participant_id = request.args.get('pid', None)
 
     if not participant_id:
-        return redirect('/html/admin_setup.html')
+        return redirect('/landing')
 
     status = data_manager.get_participant_status(participant_id)
     if not status:
@@ -383,25 +387,23 @@ def serve_html(filename):
 
     # 1. 阻止参与者访问 Admin 页面
     if "admin_setup.html" in filename:
-        if participant_id:
-            print(f"🚫 Access Denied: Participant {participant_id} tried to access admin_setup.html")
-            return "Access Denied: Participants cannot access this page.", 403
-        else:  # 允许实验者访问
-            return send_from_directory(os.path.join(app.static_folder, 'html'), filename)
+        return redirect('/landing')
     if "admin_invites.html" in filename:
         return redirect('/admin/invites')
+    if "landing.html" in filename:
+        return redirect('/landing')
 
     # 2. 如果没有 PID 就试图访问任何其他 HTML 页面，踢回 admin 设置
     if not participant_id:
         print(f"🚫 Access Denied: Attempted to access {filename} without PID.")
-        return redirect('/html/admin_setup.html')
+        return redirect('/landing')
 
     # 3. 核心：状态验证与渲染逻辑
     try:
         status = data_manager.get_participant_status(participant_id)
         if not status:  # 如果状态文件丢失 (不应发生)
             print(f"🚫 Critical Error: Status file missing for PID {participant_id}.")
-            return redirect('/html/admin_setup.html?error=status_missing')
+            return redirect('/landing')
 
         expected_index = status.get("current_step_index", -1)
         current_condition = status.get("condition", "NON_XAI")
@@ -897,4 +899,4 @@ if __name__ == "__main__":
     # 允许并发处理 /chat 和 /analyze
     app.run(debug=False, port=5000, threaded=True, use_reloader=False)
 
-    # run on "http://127.0.0.1:5000/html/admin_setup.html"
+    # public landing page: "http://127.0.0.1:5000/landing"

@@ -270,12 +270,12 @@
     }
 
     if (!participantId) {
-        // 如果没有 PID，说明流程有问题，跳转到管理员设置页
+        // 如果没有 PID，说明流程有问题，跳转到公共落地页
         errorMessage.textContent = '{{ strings.error_pid_missing }}';
         errorMessage.style.display = 'block';
         submitButton.disabled = true;
         setTimeout(() => {
-            window.location.href = '/html/admin_setup.html';
+            window.location.href = '/landing';
         }, 3000);
     }
 

@@ -148,6 +148,9 @@
         errorMessage.textContent = '{{ strings.error_pid_missing | default("Error: PID missing.", true) }}';
         errorMessage.style.display = 'block';
         submitButton.disabled = true;
+        setTimeout(() => {
+            window.location.href = '/landing';
+        }, 3000);
     } else {
         startTimer();
     }

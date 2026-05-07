@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HCI Study</title>
+    <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+    <link rel="shortcut icon" href="/assets/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+    <link rel="manifest" href="/assets/site.webmanifest" />
+    <style>
+        body {
+            margin: 0;
+            font-family: Georgia, "Times New Roman", serif;
+            background:
+                radial-gradient(circle at top left, rgba(228, 240, 235, 0.95), transparent 42%),
+                linear-gradient(180deg, #f3f6f2 0%, #e8eee9 100%);
+            color: #21302b;
+            min-height: 100vh;
+        }
+        .shell {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 48px 20px 72px;
+        }
+        .hero {
+            background: rgba(255, 255, 255, 0.88);
+            border: 1px solid rgba(50, 75, 66, 0.12);
+            border-radius: 20px;
+            box-shadow: 0 18px 45px rgba(31, 48, 43, 0.08);
+            overflow: hidden;
+        }
+        .hero-band {
+            height: 10px;
+            background: linear-gradient(90deg, #2f6b5d 0%, #87a87c 55%, #d0b36f 100%);
+        }
+        .hero-inner {
+            padding: 42px 36px;
+        }
+        .eyebrow {
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            color: #50655e;
+            margin-bottom: 14px;
+        }
+        h1 {
+            margin: 0 0 16px;
+            font-size: clamp(2.2rem, 5vw, 4rem);
+            line-height: 0.98;
+            font-weight: 600;
+            color: #18241f;
+            max-width: 10ch;
+        }
+        .lede {
+            max-width: 56ch;
+            font-size: 1.1rem;
+            line-height: 1.75;
+            color: #33443e;
+            margin-bottom: 28px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 18px;
+        }
+        .panel {
+            background: rgba(246, 249, 247, 0.92);
+            border-radius: 14px;
+            padding: 20px;
+            border: 1px solid rgba(47, 82, 71, 0.12);
+        }
+        .panel h2 {
+            margin: 0 0 10px;
+            font-size: 1.05rem;
+            color: #21332d;
+        }
+        .panel p {
+            margin: 0;
+            line-height: 1.65;
+            color: #42554d;
+        }
+        .contact-box {
+            margin-top: 24px;
+            padding: 18px 20px;
+            border-left: 4px solid #2f6b5d;
+            background: #f8faf8;
+            border-radius: 10px;
+        }
+        .contact-box p {
+            margin: 0;
+            line-height: 1.7;
+        }
+        a {
+            color: #1f5f52;
+        }
+        .footnote {
+            margin-top: 18px;
+            font-size: 0.95rem;
+            color: #5a6d66;
+        }
+    </style>
+</head>
+<body>
+<main class="shell">
+    <section class="hero">
+        <div class="hero-band"></div>
+        <div class="hero-inner">
+            <div class="eyebrow">Research Study</div>
+            <h1>Human-computer interaction study</h1>
+            <p class="lede">
+                This site is used for a research study involving interaction with an AI-based system.
+                Participation is arranged by invitation. If you have been given a study link, please use that specific link to begin.
+            </p>
+
+            <div class="grid">
+                <section class="panel">
+                    <h2>Before starting</h2>
+                    <p>
+                        Please begin only through the individual link provided to you for the study.
+                        General site access does not start a participant session.
+                    </p>
+                </section>
+                <section class="panel">
+                    <h2>Questions or interest</h2>
+                    <p>
+                        If you have questions about the research, or if you would like to participate,
+                        please contact the researcher directly before attempting to proceed.
+                    </p>
+                </section>
+                <section class="panel">
+                    <h2>Privacy note</h2>
+                    <p>
+                        This public page intentionally provides only limited information.
+                        Study-specific details are shown only within the participant flow.
+                    </p>
+                </section>
+            </div>
+
+            <div class="contact-box">
+                <p>
+                    Contact: <a href="mailto:hi@peterguan.com">hi@peterguan.com</a>
+                </p>
+            </div>
+
+            <p class="footnote">
+                If you reached this page without an invitation link, please do not attempt to access the study flow directly.
+            </p>
+        </div>
+    </section>
+</main>
+</body>
+</html>
