@@ -7,7 +7,7 @@ from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from pymongo import ReturnDocument
 import certifi
-from backend.config import VERSION_MAP
+from config import VERSION_MAP
 
 # 1. Load environment variables and connect to MongoDB
 load_dotenv()
@@ -17,32 +17,83 @@ if not MONGO_URI:
     print("❌ CRITICAL ERROR: MONGO_URI not found. Please check your .env file.")
 
 client = MongoClient(MONGO_URI, server_api=ServerApi('1'), tlsCAFile=certifi.where())
-db = client["hci_experiment"] # Database name
+PRODUCTION_DB_NAME = os.getenv("MONGO_DB_NAME", "hci_experiment")
+TEST_DB_NAME = os.getenv("MONGO_TEST_DB_NAME", "hci_experiment_test")
+prod_db = client[PRODUCTION_DB_NAME]
+test_db = client[TEST_DB_NAME]
 
-# 2. Define core data collections
-db_participants = db["participants_status"]
-db_experiment_data = db["experiment_events"]
-db_turn_data = db["dialogue_turns"]
-db_contacts = db["follow_up_contacts"] # For saving follow-up interview emails
-db_invite_batches = db["invite_batches"]
-db_invite_links = db["invite_links"]
+
+def _collections_for_db(db):
+    return {
+        "participants": db["participants_status"],
+        "experiment_data": db["experiment_events"],
+        "turn_data": db["dialogue_turns"],
+        "contacts": db["follow_up_contacts"],
+        "invite_batches": db["invite_batches"],
+        "invite_links": db["invite_links"],
+    }
+
+
+prod_collections = _collections_for_db(prod_db)
+test_collections = _collections_for_db(test_db)
 
 def create_data_dir():
     """Placeholder for backward compatibility. MongoDB doesn't need local directories."""
     print("✅ MongoDB Ready. (Local directory creation skipped)")
 
     try:
-        db_participants.create_index("participant_id", unique=True)
-        db_invite_batches.create_index("batch_id", unique=True)
-        db_invite_links.create_index("token_hash", unique=True)
-        db_invite_links.create_index("participant_id", unique=True)
-        db_invite_links.create_index("batch_id")
+        for collection_set in (prod_collections, test_collections):
+            collection_set["participants"].create_index("participant_id", unique=True)
+            collection_set["invite_batches"].create_index("batch_id", unique=True)
+            collection_set["invite_links"].create_index("token_hash", unique=True)
+            collection_set["invite_links"].create_index("participant_id", unique=True)
+            collection_set["invite_links"].create_index("batch_id")
     except Exception as e:
         print(f"⚠️ Failed to ensure MongoDB indexes: {e}")
 
+
+def _collections_for_invite_type(invite_type: str):
+    return test_collections if invite_type == "test" else prod_collections
+
+
+def _find_participant_collections(participant_id: str):
+    if prod_collections["participants"].find_one({"participant_id": participant_id}, {"_id": 1}):
+        return prod_collections
+    if test_collections["participants"].find_one({"participant_id": participant_id}, {"_id": 1}):
+        return test_collections
+    return None
+
+
+def _find_invite_collections_by_token(token: str):
+    token_hash = _hash_invite_token(token)
+    if prod_collections["invite_links"].find_one({"token_hash": token_hash}, {"_id": 1}):
+        return prod_collections
+    if test_collections["invite_links"].find_one({"token_hash": token_hash}, {"_id": 1}):
+        return test_collections
+    return None
+
+
+def _find_invite_collections_by_participant(participant_id: str):
+    if prod_collections["invite_links"].find_one({"participant_id": participant_id}, {"_id": 1}):
+        return prod_collections
+    if test_collections["invite_links"].find_one({"participant_id": participant_id}, {"_id": 1}):
+        return test_collections
+    return None
+
+
+def _find_batch_collections(batch_id: str):
+    if prod_collections["invite_batches"].find_one({"batch_id": batch_id}, {"_id": 1}):
+        return prod_collections
+    if test_collections["invite_batches"].find_one({"batch_id": batch_id}, {"_id": 1}):
+        return test_collections
+    return None
+
 def get_participant_status(participant_id: str) -> dict:
     """Fetch participant status from MongoDB"""
-    status = db_participants.find_one({"participant_id": participant_id}, {"_id": 0})
+    collections = _find_participant_collections(participant_id)
+    if not collections:
+        return {}
+    status = collections["participants"].find_one({"participant_id": participant_id}, {"_id": 0})
     return status if status else {}
 
 def get_participant_condition(participant_id: str) -> str:
@@ -55,6 +106,11 @@ def get_participant_language(participant_id: str) -> str:
 
 def save_participant_data(participant_id: str, step_name: str, data: dict):
     """Save general experiment data (questionnaires, etc.) to experiment_events"""
+    collections = _find_participant_collections(participant_id)
+    if not collections:
+        print(f"❌ Failed to save data: participant {participant_id} not found in any database.")
+        return False
+
     record = {
         "timestamp": time.time(),
         "datetime": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
@@ -63,18 +119,19 @@ def save_participant_data(participant_id: str, step_name: str, data: dict):
         "data": data
     }
     try:
-        db_experiment_data.insert_one(record)
+        collections["experiment_data"].insert_one(record)
         print(f"✅ Data saved for PID {participant_id} at step {step_name}")
         return True
     except Exception as e:
         print(f"❌ Failed to save data: {e}")
         return False
 
-def init_participant_session(participant_id: str, condition_order: str, language: str):
+def init_participant_session(participant_id: str, condition_order: str, language: str, invite_type: str = "participant"):
     """Initialize session, write to status and event collections"""
     condition_order_upper = condition_order.upper()
     if condition_order_upper not in ["AB", "BA"]:
         raise ValueError(f"Invalid condition_order: {condition_order}. Must be 'AB' or 'BA'.")
+    collections = _collections_for_invite_type(invite_type)
 
     initial_condition = "XAI" if condition_order_upper == "AB" else "NON_XAI"
 
@@ -88,12 +145,15 @@ def init_participant_session(participant_id: str, condition_order: str, language
         "current_step_index": -1
     }
 
-    # 1. Record the initial event
-    save_participant_data(participant_id, "INIT", init_data)
-
-    # 2. Update or insert participant status (upsert=True)
     try:
-        db_participants.update_one(
+        collections["experiment_data"].insert_one({
+            "timestamp": time.time(),
+            "datetime": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+            "participant_id": participant_id,
+            "step": "INIT",
+            "data": init_data
+        })
+        collections["participants"].update_one(
             {"participant_id": participant_id},
             {"$set": init_data},
             upsert=True
@@ -118,6 +178,7 @@ def generate_participant_id() -> str:
 
 
 def create_invite_batch(batch_name: str, language: str, condition_order: str, quantity: int, invite_type: str):
+    collections = _collections_for_invite_type(invite_type)
     timestamp = time.time()
     created_at = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(timestamp))
     batch_id = f"batch_{secrets.token_hex(8)}"
@@ -168,9 +229,9 @@ def create_invite_batch(batch_name: str, language: str, condition_order: str, qu
             "status": "unused",
         })
 
-    db_invite_batches.insert_one(batch_doc)
+    collections["invite_batches"].insert_one(batch_doc)
     if invite_docs:
-        db_invite_links.insert_many(invite_docs)
+        collections["invite_links"].insert_many(invite_docs)
 
     return {
         "batch_id": batch_id,
@@ -179,40 +240,49 @@ def create_invite_batch(batch_name: str, language: str, condition_order: str, qu
         "condition_order": condition_order,
         "quantity": quantity,
         "invite_type": invite_type,
+        "database_label": "test" if invite_type == "test" else "production",
         "created_at": created_at,
         "links": invite_results,
     }
 
 
 def get_invite_by_token(token: str) -> dict:
-    invite = db_invite_links.find_one({"token_hash": _hash_invite_token(token)}, {"_id": 0})
+    collections = _find_invite_collections_by_token(token)
+    if not collections:
+        return {}
+    invite = collections["invite_links"].find_one({"token_hash": _hash_invite_token(token)}, {"_id": 0})
     return invite if invite else {}
 
 
 def update_invite_last_opened(participant_id: str):
+    collections = _find_invite_collections_by_participant(participant_id)
+    if not collections:
+        return
     now_ts = time.time()
     now_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now_ts))
-    db_invite_links.update_one(
+    collections["invite_links"].update_one(
         {"participant_id": participant_id},
         {"$set": {"last_opened_at": now_str, "last_opened_ts": now_ts}}
     )
 
 
 def redeem_invite_token(token: str) -> dict:
+    collections = _find_invite_collections_by_token(token)
+    if not collections:
+        return {}
+
     token_hash = _hash_invite_token(token)
     now_ts = time.time()
     now_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now_ts))
 
-    invite = db_invite_links.find_one({"token_hash": token_hash}, {"_id": 0})
-    if not invite:
-        return {}
+    invite = collections["invite_links"].find_one({"token_hash": token_hash}, {"_id": 0})
 
     status = invite.get("status")
     if status in {"completed", "disabled"}:
         return invite
 
     if status == "unused":
-        updated = db_invite_links.find_one_and_update(
+        updated = collections["invite_links"].find_one_and_update(
             {"token_hash": token_hash, "status": "unused"},
             {"$set": {
                 "status": "in_progress",
@@ -226,7 +296,7 @@ def redeem_invite_token(token: str) -> dict:
         )
         if updated:
             return updated
-        invite = db_invite_links.find_one({"token_hash": token_hash}, {"_id": 0})
+        invite = collections["invite_links"].find_one({"token_hash": token_hash}, {"_id": 0})
         return invite if invite else {}
 
     if status == "in_progress":
@@ -239,9 +309,12 @@ def redeem_invite_token(token: str) -> dict:
 
 
 def mark_invite_completed(participant_id: str) -> bool:
+    collections = _find_invite_collections_by_participant(participant_id)
+    if not collections:
+        return True
     now_ts = time.time()
     now_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now_ts))
-    result = db_invite_links.update_one(
+    result = collections["invite_links"].update_one(
         {"participant_id": participant_id, "status": {"$ne": "completed"}},
         {"$set": {
             "status": "completed",
@@ -255,26 +328,37 @@ def mark_invite_completed(participant_id: str) -> bool:
 
 
 def get_invite_for_participant(participant_id: str) -> dict:
-    invite = db_invite_links.find_one({"participant_id": participant_id}, {"_id": 0})
+    collections = _find_invite_collections_by_participant(participant_id)
+    if not collections:
+        return {}
+    invite = collections["invite_links"].find_one({"participant_id": participant_id}, {"_id": 0})
     return invite if invite else {}
 
 
 def list_invite_batches() -> list:
-    batches = list(db_invite_batches.find({}, {"_id": 0}).sort("created_ts", -1))
-    for batch in batches:
-        counts = {"unused": 0, "in_progress": 0, "completed": 0, "disabled": 0}
-        for row in db_invite_links.aggregate([
-            {"$match": {"batch_id": batch["batch_id"]}},
-            {"$group": {"_id": "$status", "count": {"$sum": 1}}}
-        ]):
-            counts[row["_id"]] = row["count"]
-        batch["status_counts"] = counts
+    batches = []
+    for db_label, collections in (("production", prod_collections), ("test", test_collections)):
+        current_batches = list(collections["invite_batches"].find({}, {"_id": 0}).sort("created_ts", -1))
+        for batch in current_batches:
+            counts = {"unused": 0, "in_progress": 0, "completed": 0, "disabled": 0}
+            for row in collections["invite_links"].aggregate([
+                {"$match": {"batch_id": batch["batch_id"]}},
+                {"$group": {"_id": "$status", "count": {"$sum": 1}}}
+            ]):
+                counts[row["_id"]] = row["count"]
+            batch["status_counts"] = counts
+            batch["database_label"] = db_label
+        batches.extend(current_batches)
+    batches.sort(key=lambda row: row.get("created_ts", 0), reverse=True)
     return batches
 
 
 def list_invite_links_for_batch(batch_id: str) -> list:
+    collections = _find_batch_collections(batch_id)
+    if not collections:
+        return []
     return list(
-        db_invite_links.find(
+        collections["invite_links"].find(
             {"batch_id": batch_id},
             {
                 "_id": 0,
@@ -298,6 +382,9 @@ def update_participant_condition(participant_id: str):
     status_data = get_participant_status(participant_id)
     if not status_data:
         return False
+    collections = _find_participant_collections(participant_id)
+    if not collections:
+        return False
 
     current_condition = status_data.get("condition")
     condition_order = status_data.get("condition_order")
@@ -311,7 +398,7 @@ def update_participant_condition(participant_id: str):
         new_condition = "NON_XAI" if current_condition == "XAI" else "XAI"
 
     try:
-        db_participants.update_one(
+        collections["participants"].update_one(
             {"participant_id": participant_id},
             {"$set": {
                 "condition": new_condition,
@@ -326,8 +413,11 @@ def update_participant_condition(participant_id: str):
 
 def update_participant_step(participant_id: str, new_step_index: int):
     """Update the current step index of the user"""
+    collections = _find_participant_collections(participant_id)
+    if not collections:
+        return False
     try:
-        db_participants.update_one(
+        collections["participants"].update_one(
             {"participant_id": participant_id},
             {"$set": {"current_step_index": new_step_index}}
         )
@@ -339,8 +429,11 @@ def update_participant_step(participant_id: str, new_step_index: int):
 
 def record_washout_start(participant_id: str, start_ts: float):
     """Helper function to record washout start time for app.py"""
+    collections = _find_participant_collections(participant_id)
+    if not collections:
+        return False
     try:
-        db_participants.update_one(
+        collections["participants"].update_one(
             {"participant_id": participant_id},
             {"$set": {"washout_start_ts": start_ts}}
         )
@@ -351,6 +444,10 @@ def record_washout_start(participant_id: str, start_ts: float):
 
 def save_turn_data(participant_id: str, turn_data: dict):
     """Save individual dialogue turns into the dialogue_turns collection"""
+    collections = _find_participant_collections(participant_id)
+    if not collections:
+        print(f"❌ Failed to save turn data: participant {participant_id} not found in any database.")
+        return False
     record = {
         "timestamp": time.time(),
         "datetime": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
@@ -359,7 +456,7 @@ def save_turn_data(participant_id: str, turn_data: dict):
         "data": turn_data
     }
     try:
-        db_turn_data.insert_one(record)
+        collections["turn_data"].insert_one(record)
         print(f"✅ Turn data saved for PID {participant_id}, Turn {turn_data.get('turn')}")
         return True
     except Exception as e:
@@ -368,8 +465,12 @@ def save_turn_data(participant_id: str, turn_data: dict):
 
 def save_contact_email(participant_id: str, email: str):
     """Save contact information for follow-up interviews"""
+    collections = _find_participant_collections(participant_id)
+    if not collections:
+        print(f"❌ Failed to save contact data: participant {participant_id} not found in any database.")
+        return False
     try:
-        db_contacts.insert_one({
+        collections["contacts"].insert_one({
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
             "participant_id": participant_id,
             "email": email
@@ -379,3 +480,12 @@ def save_contact_email(participant_id: str, email: str):
     except Exception as e:
         print(f"❌ Failed to save contact data: {e}")
         return False
+
+
+def clear_database_contents(database_label: str) -> dict:
+    collections = test_collections if database_label == "test" else prod_collections
+    deleted = {}
+    for name, collection in collections.items():
+        result = collection.delete_many({})
+        deleted[name] = result.deleted_count
+    return deleted

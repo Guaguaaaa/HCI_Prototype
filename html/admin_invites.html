@@ -196,6 +196,7 @@
                 <tr>
                     <th>Batch</th>
                     <th>Assignment</th>
+                    <th>Database</th>
                     <th>Type</th>
                     <th>Created</th>
                     <th>Usage</th>
@@ -203,7 +204,7 @@
                 </tr>
                 </thead>
                 <tbody id="batch-table-body">
-                <tr><td colspan="6">Loading batches...</td></tr>
+                <tr><td colspan="7">Loading batches...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -264,7 +265,7 @@
 
     function renderBatches(batches) {
         if (!batches.length) {
-            batchTableBody.innerHTML = '<tr><td colspan="6">No batches created yet.</td></tr>';
+            batchTableBody.innerHTML = '<tr><td colspan="7">No batches created yet.</td></tr>';
             return;
         }
 
@@ -278,6 +279,7 @@
                     <span class="mono">${batch.batch_id}</span>
                 </td>
                 <td>${batch.language} / ${batch.condition_order}</td>
+                <td>${batch.database_label || 'production'}</td>
                 <td>${batch.invite_type}</td>
                 <td>${batch.created_at}</td>
                 <td>
@@ -385,7 +387,7 @@
     logoutBtn.addEventListener('click', async () => {
         await fetch('/admin/logout', { method: 'POST' });
         latestLinks.textContent = 'No links loaded yet.';
-        batchTableBody.innerHTML = '<tr><td colspan="6">Logged out.</td></tr>';
+        batchTableBody.innerHTML = '<tr><td colspan="7">Logged out.</td></tr>';
         showLogin();
     });
 

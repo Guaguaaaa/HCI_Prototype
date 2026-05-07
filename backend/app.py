@@ -220,7 +220,8 @@ def redeem_invite(token):
             data_manager.init_participant_session(
                 participant_id,
                 invite["condition_order"],
-                invite["language"]
+                invite["language"],
+                invite.get("invite_type", "participant")
             )
             participant_status = data_manager.get_participant_status(participant_id)
 
