@@ -7,7 +7,7 @@ from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from pymongo import ReturnDocument
 import certifi
-from config import VERSION_MAP
+from backend.config import VERSION_MAP
 
 # 1. Load environment variables and connect to MongoDB
 load_dotenv()
