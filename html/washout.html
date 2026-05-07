@@ -126,7 +126,11 @@
     const KONAMI_UNLOCK_TEXT = '{{ strings.konami_unlocked | default("Washout skipped. You can continue now.", true) }}';
 
     // 确保从 Session Storage 中获取 participant_id
-    const participantId = sessionStorage.getItem('participant_id');
+    const participantId = sessionStorage.getItem('participant_id') || new URLSearchParams(window.location.search).get('pid');
+
+    if (participantId) {
+        sessionStorage.setItem('participant_id', participantId);
+    }
 
     let timerInterval;
     let secondsRemaining = 300; // 5 minutes
@@ -218,7 +222,7 @@
 
         // 1. 调用后端路由保存数据并获取下一个 URL
         // 后端将执行严格的时间验证
-        fetch('http://127.0.0.1:5000/save_data', {
+        fetch('/save_data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

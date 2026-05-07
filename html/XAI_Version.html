@@ -444,7 +444,11 @@
         'surprise': '😲'
     };
 
-    const participantId = sessionStorage.getItem('participant_id');
+    const participantId = sessionStorage.getItem('participant_id') || new URLSearchParams(window.location.search).get('pid');
+
+    if (participantId) {
+        sessionStorage.setItem('participant_id', participantId);
+    }
     if (!participantId) console.error(JS_PID_ERROR);
 
     const chatForm = document.getElementById('chat-form');
@@ -531,7 +535,7 @@
 
         // 2. Trigger XAI Analysis (Parallel Request)
         // We send this *concurrently* with the chat request
-        fetch('http://127.0.0.1:5000/analyze', {
+        fetch('/analyze', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -556,7 +560,7 @@
 
         let totalResponseText = "";
 
-        fetch('http://127.0.0.1:5000/chat', {
+        fetch('/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -657,7 +661,7 @@
         endDialogueButton.disabled = true;
 
         try {
-            const response = await fetch('http://127.0.0.1:5000/end_dialogue', {
+            const response = await fetch('/end_dialogue', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ participant_id: participantId })

@@ -235,7 +235,11 @@
     const ERROR_PID_MISSING = '{{ strings.error_pid_missing | default("Error: PID missing.", true) }}';
 
     // 确保从 Session Storage 中获取 participant_id
-    const participantId = sessionStorage.getItem('participant_id');
+    const participantId = sessionStorage.getItem('participant_id') || new URLSearchParams(window.location.search).get('pid');
+
+    if (participantId) {
+        sessionStorage.setItem('participant_id', participantId);
+    }
 
     if (!participantId) {
         errorMessage.textContent = ERROR_PID_MISSING;
@@ -389,7 +393,7 @@
         let mainApiData; // To store result of the first fetch
 
         // 1. Submit main data (all fields)
-        fetch('http://127.0.0.1:5000/save_data', {
+        fetch('/save_data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -409,7 +413,7 @@
             // 2. If consent was 'Yes' and email is valid, submit contact info separately
             if (data.interview_consent === 'Yes' && contactData.email) {
                 console.log("Submitting contact info separately:", contactData.email);
-                return fetch('http://127.0.0.1:5000/save_contact', {
+                return fetch('/save_contact', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ participant_id: participantId, email: contactData.email })

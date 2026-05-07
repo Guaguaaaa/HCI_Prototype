@@ -1,10 +1,10 @@
 import os
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-from flask import Flask, request, jsonify, Response, send_from_directory, render_template_string, redirect, url_for
+from functools import wraps
+from flask import Flask, request, jsonify, Response, send_from_directory, render_template_string, redirect, url_for, session
 from flask_cors import CORS
-
-import json
+import secrets
 import time
 import numpy as np
 
@@ -18,9 +18,11 @@ from backend.localization import get_localization_for_page
 project_root = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(project_root)
 app = Flask(__name__, static_folder=project_root)
+app.secret_key = os.getenv("FLASK_SECRET_KEY") or os.getenv("ADMIN_SESSION_SECRET") or secrets.token_hex(32)
 CORS(app)
 
 data_manager.create_data_dir()
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
 
 
 # (calculate_text_metrics 保持不变)
@@ -68,6 +70,80 @@ def render_template_page(template_file_name: str, module_name: str, participant_
     return render_template_string(html_content, **render_context)
 
 
+def render_invite_status_page(title: str, message: str, status_code: int = 200):
+    html_content = """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{{ title }}</title>
+        <style>
+            body {
+                margin: 0;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                background: #f4f7f6;
+                color: #243342;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
+                padding: 24px;
+                box-sizing: border-box;
+            }
+            .card {
+                width: min(640px, 100%);
+                background: #ffffff;
+                border-radius: 12px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+                padding: 32px;
+            }
+            h1 {
+                margin-top: 0;
+                margin-bottom: 16px;
+                color: #2c3e50;
+            }
+            p {
+                line-height: 1.6;
+                margin: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h1>{{ title }}</h1>
+            <p>{{ message }}</p>
+        </div>
+    </body>
+    </html>
+    """
+    return Response(render_template_string(html_content, title=title, message=message), status=status_code)
+
+
+def is_admin_authenticated() -> bool:
+    return bool(session.get("admin_authenticated"))
+
+
+def require_admin_auth(view_func):
+    @wraps(view_func)
+    def wrapped(*args, **kwargs):
+        if not is_admin_authenticated():
+            return jsonify({"error": "Unauthorized"}), 401
+        return view_func(*args, **kwargs)
+    return wrapped
+
+
+def build_absolute_invite_url(token: str) -> str:
+    return url_for("redeem_invite", token=token, _external=True)
+
+
+def participant_status_or_error(participant_id: str):
+    status = data_manager.get_participant_status(participant_id)
+    if not status:
+        return None, jsonify({"error": "Participant session not found. Please use a valid experiment link."}), 404
+    return status, None
+
+
 # --- 静态文件服务路由 ---
 @app.route('/')
 def root():
@@ -87,6 +163,13 @@ def serve_index():
         return redirect('/html/admin_setup.html')
 
     status = data_manager.get_participant_status(participant_id)
+    if not status:
+        return render_invite_status_page(
+            "Session Not Found",
+            "This participant session could not be found. Please restart using a valid experiment link.",
+            status_code=404
+        )
+
     # Consent 页面只应在 step_index 为 -1 时访问
     expected_index = status.get("current_step_index", -1)
 
@@ -102,6 +185,138 @@ def serve_index():
         "current_step_name": "CONSENT_AGREEMENT"  # 虽然不在列表里，但 JS 需要
     }
     return render_template_page('index.html', 'consent', participant_id, context=context)
+
+
+@app.route('/invite/<token>')
+def redeem_invite(token):
+    try:
+        invite = data_manager.redeem_invite_token(token)
+        if not invite:
+            return render_invite_status_page(
+                "Invalid Link",
+                "This invitation link is invalid or no longer available. Please contact the experimenter.",
+                status_code=404
+            )
+
+        status = invite.get("status")
+        if status == "disabled":
+            return render_invite_status_page(
+                "Link Disabled",
+                "This invitation link has been disabled. Please contact the experimenter for a new link.",
+                status_code=403
+            )
+        if status == "completed":
+            return render_invite_status_page(
+                "Experiment Already Completed",
+                "This invitation link has already been used to complete the study and cannot be reused.",
+                status_code=410
+            )
+
+        participant_id = invite["participant_id"]
+        participant_status = data_manager.get_participant_status(participant_id)
+
+        if not participant_status:
+            llm_service.clear_session(participant_id)
+            data_manager.init_participant_session(
+                participant_id,
+                invite["condition_order"],
+                invite["language"]
+            )
+            participant_status = data_manager.get_participant_status(participant_id)
+
+        return redirect_to_expected_step(participant_id, participant_status)
+
+    except Exception as e:
+        print(f"Error redeeming invite token: {e}")
+        return render_invite_status_page(
+            "Link Error",
+            "An unexpected error occurred while opening this invitation link. Please try again later.",
+            status_code=500
+        )
+
+
+@app.route('/admin/invites')
+def admin_invites_page():
+    return send_from_directory(os.path.join(app.static_folder, 'html'), 'admin_invites.html')
+
+
+@app.route('/admin/session')
+def admin_session_status():
+    return jsonify({"authenticated": is_admin_authenticated()})
+
+
+@app.route('/admin/login', methods=['POST'])
+def admin_login():
+    payload = request.json or {}
+    password = payload.get("password", "")
+
+    if not ADMIN_PASSWORD:
+        return jsonify({"error": "ADMIN_PASSWORD is not configured on the server."}), 500
+
+    if password != ADMIN_PASSWORD:
+        session.pop("admin_authenticated", None)
+        return jsonify({"error": "Invalid password."}), 401
+
+    session["admin_authenticated"] = True
+    return jsonify({"success": True})
+
+
+@app.route('/admin/logout', methods=['POST'])
+def admin_logout():
+    session.pop("admin_authenticated", None)
+    return jsonify({"success": True})
+
+
+@app.route('/admin/invite-batches', methods=['GET'])
+@require_admin_auth
+def get_invite_batches():
+    return jsonify({"success": True, "batches": data_manager.list_invite_batches()})
+
+
+@app.route('/admin/invite-batches', methods=['POST'])
+@require_admin_auth
+def create_invite_batch():
+    payload = request.json or {}
+    batch_name = (payload.get("batch_name") or "").strip()
+    language = payload.get("language")
+    condition_order = payload.get("condition_order")
+    invite_type = payload.get("invite_type")
+    quantity = payload.get("quantity")
+
+    if not batch_name or language not in {"en", "zh-CN"} or condition_order not in {"AB", "BA"}:
+        return jsonify({"error": "Invalid batch_name, language, or condition_order."}), 400
+
+    if invite_type not in {"participant", "test"}:
+        return jsonify({"error": "Invalid invite_type."}), 400
+
+    try:
+        quantity = int(quantity)
+    except (TypeError, ValueError):
+        return jsonify({"error": "Quantity must be an integer."}), 400
+
+    if quantity <= 0 or quantity > 500:
+        return jsonify({"error": "Quantity must be between 1 and 500."}), 400
+
+    batch = data_manager.create_invite_batch(
+        batch_name=batch_name,
+        language=language,
+        condition_order=condition_order,
+        quantity=quantity,
+        invite_type=invite_type
+    )
+    for link in batch["links"]:
+        link["url"] = build_absolute_invite_url(link["token"])
+
+    return jsonify({"success": True, "batch": batch})
+
+
+@app.route('/admin/invite-batches/<batch_id>/links')
+@require_admin_auth
+def get_invite_batch_links(batch_id):
+    links = data_manager.list_invite_links_for_batch(batch_id)
+    for link in links:
+        link["url"] = build_absolute_invite_url(link["token"])
+    return jsonify({"success": True, "links": links})
 
 
 # --- NEW HELPER: Redirect to expected step ---
@@ -172,6 +387,8 @@ def serve_html(filename):
             return "Access Denied: Participants cannot access this page.", 403
         else:  # 允许实验者访问
             return send_from_directory(os.path.join(app.static_folder, 'html'), filename)
+    if "admin_invites.html" in filename:
+        return redirect('/admin/invites')
 
     # 2. 如果没有 PID 就试图访问任何其他 HTML 页面，踢回 admin 设置
     if not participant_id:
@@ -236,6 +453,10 @@ def serve_html(filename):
             "current_step_index": expected_index,
             "current_step_name": expected_step_key
         }
+
+        if module_name == "debrief":
+            data_manager.mark_invite_completed(participant_id)
+
         # 如果是问卷页面，注入条件标志
         if module_name == "post_questionnaire":
             context["is_xai_condition"] = (current_condition == "XAI")
@@ -318,9 +539,12 @@ def save_data():
         if not participant_id or not step_name or step_data is None or current_step_index is None:
             return jsonify({"error": "Missing required fields"}), 400
 
+        status, error_response = participant_status_or_error(participant_id)
+        if error_response:
+            return error_response
+
         # --- (NEW) Washout 验证 ---
         if step_name == "WASHOUT":
-            status = data_manager.get_participant_status(participant_id)
             start_ts = status.get("washout_start_ts")
             if not start_ts:  # 如果没有开始时间戳 (不应发生)
                 print(f"Error: Washout start timestamp missing for {participant_id}")
@@ -354,7 +578,6 @@ def save_data():
 
         # --- (NEW) XAI 问卷字段填充 ---
         if step_name in ["POST_QUESTIONNAIRE_1", "POST_QUESTIONNAIRE_2"]:
-            status = data_manager.get_participant_status(participant_id)
             current_condition = status.get("condition")
             if current_condition == "NON_XAI":
                 # 确保这些键存在且值为 null
@@ -417,7 +640,10 @@ def chat():
     if not user_input or not participant_id:
         return Response("⚠️ No message or participant_id provided", status=400, mimetype='text/plain')
 
-    status = data_manager.get_participant_status(participant_id)
+    status, error_response = participant_status_or_error(participant_id)
+    if error_response:
+        return Response(error_response.get_data(as_text=True), status=404, mimetype='application/json')
+
     condition = status.get("condition", "UNKNOWN")
     current_index = status.get("current_step_index")
 
@@ -517,6 +743,10 @@ def analyze():
         if not user_input:
             return jsonify({"error": "No input provided"}), 400
 
+        status, error_response = participant_status_or_error(participant_id)
+        if error_response:
+            return error_response
+
         # 1. 运行情绪分析 (Step 1 的成果)
         print(f"🧠 Analyzing sentiment for PID {participant_id}...")
         sentiment_result = sentiment_service.analyze_sentiment(user_input)
@@ -524,7 +754,6 @@ def analyze():
         # 2. 生成 XAI 解释 (Step 2 的成果)
         # 只有当条件是 XAI 时才需要生成解释，但为了简单，后端可以总是生成，前端决定显不显示
         # 或者我们检查状态只为 XAI 生成
-        status = data_manager.get_participant_status(participant_id)
         condition = status.get("condition", "NON_XAI")
 
         xai_explanation = ""
@@ -554,8 +783,11 @@ def end_dialogue():
         if not participant_id:
             return jsonify({"error": "Missing participant_id"}), 400
 
+        status, error_response = participant_status_or_error(participant_id)
+        if error_response:
+            return error_response
+
         session = llm_service.get_session(participant_id)
-        status = data_manager.get_participant_status(participant_id)
         current_index = status.get("current_step_index")
 
         # 确定 Step Name
@@ -635,6 +867,10 @@ def save_contact():
 
         if not participant_id or not email:
             return jsonify({"error": "Missing participant_id or email"}), 400
+
+        _, error_response = participant_status_or_error(participant_id)
+        if error_response:
+            return error_response
 
         if data_manager.save_contact_email(participant_id, email):
             return jsonify({"success": True})

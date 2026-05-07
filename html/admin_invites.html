@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invite Admin</title>
+    <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background: #eef3f1;
+            color: #23313d;
+        }
+        .page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 32px 20px 48px;
+        }
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        h1, h2, h3 {
+            margin-top: 0;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        input, select, button, textarea {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #cdd7de;
+            font-size: 1rem;
+        }
+        button {
+            border: none;
+            background: #1f7a67;
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        button.secondary {
+            background: #415a6b;
+        }
+        button:hover {
+            opacity: 0.94;
+        }
+        .actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .actions button {
+            width: auto;
+            min-width: 160px;
+        }
+        .hidden {
+            display: none;
+        }
+        .error {
+            color: #b42318;
+            margin-top: 12px;
+        }
+        .success {
+            color: #0f766e;
+            margin-top: 12px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            text-align: left;
+            padding: 12px 10px;
+            border-bottom: 1px solid #e7edf1;
+            vertical-align: top;
+        }
+        th {
+            color: #526371;
+            font-size: 0.92rem;
+        }
+        .mono {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.92rem;
+        }
+        pre {
+            background: #0f1720;
+            color: #e7f0f7;
+            padding: 16px;
+            border-radius: 10px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .status-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .pill {
+            background: #edf4f7;
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 0.88rem;
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div class="card">
+        <h1>Invite Link Admin</h1>
+        <p>Create fixed invitation batches for participants and export the generated links.</p>
+    </div>
+
+    <div id="login-card" class="card hidden">
+        <h2>Admin Login</h2>
+        <form id="login-form">
+            <label for="password">Admin Password</label>
+            <input type="password" id="password" autocomplete="current-password" required>
+            <div class="actions" style="margin-top: 16px;">
+                <button type="submit">Unlock Invite Admin</button>
+            </div>
+            <p id="login-error" class="error hidden"></p>
+        </form>
+    </div>
+
+    <div id="app-card" class="hidden">
+        <div class="card">
+            <div class="actions" style="justify-content: space-between;">
+                <h2 style="margin-bottom: 0;">Batch Generator</h2>
+                <button id="logout-btn" type="button" class="secondary">Log Out</button>
+            </div>
+            <form id="batch-form">
+                <div class="grid">
+                    <div>
+                        <label for="batch_name">Batch Name</label>
+                        <input type="text" id="batch_name" placeholder="e.g. EN_AB_Main_01" required>
+                    </div>
+                    <div>
+                        <label for="language">Language</label>
+                        <select id="language" required>
+                            <option value="en">English</option>
+                            <option value="zh-CN">Chinese</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="condition_order">Condition Order</label>
+                        <select id="condition_order" required>
+                            <option value="AB">AB (XAI first)</option>
+                            <option value="BA">BA (Non-XAI first)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="invite_type">Link Type</label>
+                        <select id="invite_type" required>
+                            <option value="participant">Participant</option>
+                            <option value="test">Test</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="quantity">Quantity</label>
+                        <input type="number" id="quantity" min="1" max="500" value="10" required>
+                    </div>
+                </div>
+                <div class="actions" style="margin-top: 18px;">
+                    <button type="submit">Create Batch</button>
+                </div>
+                <p id="batch-message" class="hidden"></p>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Generated Links</h2>
+            <p>Newly created links appear here immediately. Existing batches can be opened from the table below.</p>
+            <pre id="latest-links">No links loaded yet.</pre>
+        </div>
+
+        <div class="card">
+            <h2>Batches</h2>
+            <table>
+                <thead>
+                <tr>
+                    <th>Batch</th>
+                    <th>Assignment</th>
+                    <th>Type</th>
+                    <th>Created</th>
+                    <th>Usage</th>
+                    <th>Links</th>
+                </tr>
+                </thead>
+                <tbody id="batch-table-body">
+                <tr><td colspan="6">Loading batches...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const loginCard = document.getElementById('login-card');
+    const appCard = document.getElementById('app-card');
+    const loginForm = document.getElementById('login-form');
+    const loginError = document.getElementById('login-error');
+    const batchForm = document.getElementById('batch-form');
+    const batchMessage = document.getElementById('batch-message');
+    const batchTableBody = document.getElementById('batch-table-body');
+    const latestLinks = document.getElementById('latest-links');
+    const logoutBtn = document.getElementById('logout-btn');
+
+    function showLogin() {
+        loginCard.classList.remove('hidden');
+        appCard.classList.add('hidden');
+    }
+
+    function showApp() {
+        loginCard.classList.add('hidden');
+        appCard.classList.remove('hidden');
+    }
+
+    function showBatchMessage(message, isError = false) {
+        batchMessage.textContent = message;
+        batchMessage.className = isError ? 'error' : 'success';
+        batchMessage.classList.remove('hidden');
+    }
+
+    function formatLinks(links) {
+        if (!links.length) {
+            return 'No links found for this batch.';
+        }
+        return links.map(link => {
+            return [
+                link.url,
+                `participant_id=${link.participant_id}`,
+                `status=${link.status}`,
+                `language=${link.language}`,
+                `condition_order=${link.condition_order}`,
+                `type=${link.invite_type}`
+            ].join(' | ');
+        }).join('\n');
+    }
+
+    async function loadBatchLinks(batchId) {
+        const response = await fetch(`/admin/invite-batches/${encodeURIComponent(batchId)}/links`);
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'Failed to load batch links.');
+        }
+        latestLinks.textContent = formatLinks(data.links);
+    }
+
+    function renderBatches(batches) {
+        if (!batches.length) {
+            batchTableBody.innerHTML = '<tr><td colspan="6">No batches created yet.</td></tr>';
+            return;
+        }
+
+        batchTableBody.innerHTML = '';
+        batches.forEach(batch => {
+            const tr = document.createElement('tr');
+            const counts = batch.status_counts || {};
+            tr.innerHTML = `
+                <td>
+                    <strong>${batch.batch_name}</strong><br>
+                    <span class="mono">${batch.batch_id}</span>
+                </td>
+                <td>${batch.language} / ${batch.condition_order}</td>
+                <td>${batch.invite_type}</td>
+                <td>${batch.created_at}</td>
+                <td>
+                    <div class="status-row">
+                        <span class="pill">Unused: ${counts.unused || 0}</span>
+                        <span class="pill">In progress: ${counts.in_progress || 0}</span>
+                        <span class="pill">Completed: ${counts.completed || 0}</span>
+                        <span class="pill">Disabled: ${counts.disabled || 0}</span>
+                    </div>
+                </td>
+                <td><button type="button" class="secondary" data-batch-id="${batch.batch_id}">Show Links</button></td>
+            `;
+            batchTableBody.appendChild(tr);
+        });
+
+        batchTableBody.querySelectorAll('button[data-batch-id]').forEach(button => {
+            button.addEventListener('click', async () => {
+                latestLinks.textContent = 'Loading links...';
+                try {
+                    await loadBatchLinks(button.dataset.batchId);
+                } catch (error) {
+                    latestLinks.textContent = `Error: ${error.message}`;
+                }
+            });
+        });
+    }
+
+    async function loadBatches() {
+        const response = await fetch('/admin/invite-batches');
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'Failed to load batches.');
+        }
+        renderBatches(data.batches);
+    }
+
+    async function bootstrap() {
+        const response = await fetch('/admin/session');
+        const data = await response.json();
+        if (data.authenticated) {
+            showApp();
+            await loadBatches();
+        } else {
+            showLogin();
+        }
+    }
+
+    loginForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        loginError.classList.add('hidden');
+        const password = document.getElementById('password').value;
+
+        const response = await fetch('/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password })
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            loginError.textContent = data.error || 'Login failed.';
+            loginError.classList.remove('hidden');
+            return;
+        }
+
+        document.getElementById('password').value = '';
+        showApp();
+        await loadBatches();
+    });
+
+    batchForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        showBatchMessage('Creating batch...');
+
+        const payload = {
+            batch_name: document.getElementById('batch_name').value.trim(),
+            language: document.getElementById('language').value,
+            condition_order: document.getElementById('condition_order').value,
+            invite_type: document.getElementById('invite_type').value,
+            quantity: parseInt(document.getElementById('quantity').value, 10)
+        };
+
+        const response = await fetch('/admin/invite-batches', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            showBatchMessage(data.error || 'Failed to create batch.', true);
+            return;
+        }
+
+        showBatchMessage(`Created batch ${data.batch.batch_name} with ${data.batch.quantity} links.`);
+        latestLinks.textContent = formatLinks(data.batch.links);
+        batchForm.reset();
+        document.getElementById('quantity').value = 10;
+        document.getElementById('language').value = 'en';
+        document.getElementById('condition_order').value = 'AB';
+        document.getElementById('invite_type').value = 'participant';
+        await loadBatches();
+    });
+
+    logoutBtn.addEventListener('click', async () => {
+        await fetch('/admin/logout', { method: 'POST' });
+        latestLinks.textContent = 'No links loaded yet.';
+        batchTableBody.innerHTML = '<tr><td colspan="6">Logged out.</td></tr>';
+        showLogin();
+    });
+
+    bootstrap().catch(error => {
+        latestLinks.textContent = `Error: ${error.message}`;
+        showLogin();
+    });
+</script>
+</body>
+</html>

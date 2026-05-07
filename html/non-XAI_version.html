@@ -331,7 +331,11 @@
     const JS_MODAL_CONFIRM_TEXT = '{{ strings.modal_confirm_button }}';
 
     // 确保从 Session Storage 中获取 participant_id
-    const participantId = sessionStorage.getItem('participant_id');
+    const participantId = sessionStorage.getItem('participant_id') || new URLSearchParams(window.location.search).get('pid');
+
+    if (participantId) {
+        sessionStorage.setItem('participant_id', participantId);
+    }
 
     if (!participantId) {
         // Fallback error handling if PID is missing (good practice)
@@ -361,7 +365,7 @@
 
         let totalResponseText = "";
 
-        fetch('http://127.0.0.1:5000/chat', {
+        fetch('/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             // 确保在 body 中添加 participant_id
@@ -517,10 +521,10 @@
         endDialogueButton.disabled = true;
 
         try {
-            const participantId = sessionStorage.getItem('participant_id');
+            const participantId = sessionStorage.getItem('participant_id') || new URLSearchParams(window.location.search).get('pid');
 
             // 1. 调用新的后端路由来完成对话并获取下一个 URL
-            const response = await fetch('http://127.0.0.1:5000/end_dialogue', {
+            const response = await fetch('/end_dialogue', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

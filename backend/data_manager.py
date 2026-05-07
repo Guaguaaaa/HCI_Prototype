@@ -1,8 +1,11 @@
 import os
 import time
+import secrets
+import hashlib
 from dotenv import load_dotenv
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
+from pymongo import ReturnDocument
 import certifi
 from backend.config import VERSION_MAP
 
@@ -21,10 +24,21 @@ db_participants = db["participants_status"]
 db_experiment_data = db["experiment_events"]
 db_turn_data = db["dialogue_turns"]
 db_contacts = db["follow_up_contacts"] # For saving follow-up interview emails
+db_invite_batches = db["invite_batches"]
+db_invite_links = db["invite_links"]
 
 def create_data_dir():
     """Placeholder for backward compatibility. MongoDB doesn't need local directories."""
     print("✅ MongoDB Ready. (Local directory creation skipped)")
+
+    try:
+        db_participants.create_index("participant_id", unique=True)
+        db_invite_batches.create_index("batch_id", unique=True)
+        db_invite_links.create_index("token_hash", unique=True)
+        db_invite_links.create_index("participant_id", unique=True)
+        db_invite_links.create_index("batch_id")
+    except Exception as e:
+        print(f"⚠️ Failed to ensure MongoDB indexes: {e}")
 
 def get_participant_status(participant_id: str) -> dict:
     """Fetch participant status from MongoDB"""
@@ -89,6 +103,195 @@ def init_participant_session(participant_id: str, condition_order: str, language
     except Exception as e:
         print(f"❌ Failed to init session status: {e}")
         return "/html/admin_setup.html?error=db_error"
+
+
+def _hash_invite_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def generate_invite_token() -> str:
+    return secrets.token_urlsafe(24)
+
+
+def generate_participant_id() -> str:
+    return f"P_{secrets.token_hex(8).upper()}"
+
+
+def create_invite_batch(batch_name: str, language: str, condition_order: str, quantity: int, invite_type: str):
+    timestamp = time.time()
+    created_at = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(timestamp))
+    batch_id = f"batch_{secrets.token_hex(8)}"
+
+    batch_doc = {
+        "batch_id": batch_id,
+        "batch_name": batch_name,
+        "language": language,
+        "condition_order": condition_order,
+        "quantity": quantity,
+        "invite_type": invite_type,
+        "created_at": created_at,
+        "created_ts": timestamp,
+    }
+
+    invite_docs = []
+    invite_results = []
+    for _ in range(quantity):
+        token = generate_invite_token()
+        participant_id = generate_participant_id()
+        invite_doc = {
+            "batch_id": batch_id,
+            "token": token,
+            "token_hash": _hash_invite_token(token),
+            "participant_id": participant_id,
+            "language": language,
+            "condition_order": condition_order,
+            "invite_type": invite_type,
+            "status": "unused",
+            "created_at": created_at,
+            "created_ts": timestamp,
+            "first_opened_at": None,
+            "first_opened_ts": None,
+            "last_opened_at": None,
+            "last_opened_ts": None,
+            "completed_at": None,
+            "completed_ts": None,
+            "disabled_at": None,
+            "disabled_ts": None,
+        }
+        invite_docs.append(invite_doc)
+        invite_results.append({
+            "token": token,
+            "participant_id": participant_id,
+            "language": language,
+            "condition_order": condition_order,
+            "invite_type": invite_type,
+            "status": "unused",
+        })
+
+    db_invite_batches.insert_one(batch_doc)
+    if invite_docs:
+        db_invite_links.insert_many(invite_docs)
+
+    return {
+        "batch_id": batch_id,
+        "batch_name": batch_name,
+        "language": language,
+        "condition_order": condition_order,
+        "quantity": quantity,
+        "invite_type": invite_type,
+        "created_at": created_at,
+        "links": invite_results,
+    }
+
+
+def get_invite_by_token(token: str) -> dict:
+    invite = db_invite_links.find_one({"token_hash": _hash_invite_token(token)}, {"_id": 0})
+    return invite if invite else {}
+
+
+def update_invite_last_opened(participant_id: str):
+    now_ts = time.time()
+    now_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now_ts))
+    db_invite_links.update_one(
+        {"participant_id": participant_id},
+        {"$set": {"last_opened_at": now_str, "last_opened_ts": now_ts}}
+    )
+
+
+def redeem_invite_token(token: str) -> dict:
+    token_hash = _hash_invite_token(token)
+    now_ts = time.time()
+    now_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now_ts))
+
+    invite = db_invite_links.find_one({"token_hash": token_hash}, {"_id": 0})
+    if not invite:
+        return {}
+
+    status = invite.get("status")
+    if status in {"completed", "disabled"}:
+        return invite
+
+    if status == "unused":
+        updated = db_invite_links.find_one_and_update(
+            {"token_hash": token_hash, "status": "unused"},
+            {"$set": {
+                "status": "in_progress",
+                "first_opened_at": now_str,
+                "first_opened_ts": now_ts,
+                "last_opened_at": now_str,
+                "last_opened_ts": now_ts,
+            }},
+            return_document=ReturnDocument.AFTER,
+            projection={"_id": 0}
+        )
+        if updated:
+            return updated
+        invite = db_invite_links.find_one({"token_hash": token_hash}, {"_id": 0})
+        return invite if invite else {}
+
+    if status == "in_progress":
+        update_invite_last_opened(invite["participant_id"])
+        invite["last_opened_at"] = now_str
+        invite["last_opened_ts"] = now_ts
+        return invite
+
+    return invite
+
+
+def mark_invite_completed(participant_id: str) -> bool:
+    now_ts = time.time()
+    now_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now_ts))
+    result = db_invite_links.update_one(
+        {"participant_id": participant_id, "status": {"$ne": "completed"}},
+        {"$set": {
+            "status": "completed",
+            "completed_at": now_str,
+            "completed_ts": now_ts,
+            "last_opened_at": now_str,
+            "last_opened_ts": now_ts,
+        }}
+    )
+    return result.acknowledged
+
+
+def get_invite_for_participant(participant_id: str) -> dict:
+    invite = db_invite_links.find_one({"participant_id": participant_id}, {"_id": 0})
+    return invite if invite else {}
+
+
+def list_invite_batches() -> list:
+    batches = list(db_invite_batches.find({}, {"_id": 0}).sort("created_ts", -1))
+    for batch in batches:
+        counts = {"unused": 0, "in_progress": 0, "completed": 0, "disabled": 0}
+        for row in db_invite_links.aggregate([
+            {"$match": {"batch_id": batch["batch_id"]}},
+            {"$group": {"_id": "$status", "count": {"$sum": 1}}}
+        ]):
+            counts[row["_id"]] = row["count"]
+        batch["status_counts"] = counts
+    return batches
+
+
+def list_invite_links_for_batch(batch_id: str) -> list:
+    return list(
+        db_invite_links.find(
+            {"batch_id": batch_id},
+            {
+                "_id": 0,
+                "batch_id": 1,
+                "token": 1,
+                "participant_id": 1,
+                "language": 1,
+                "condition_order": 1,
+                "invite_type": 1,
+                "status": 1,
+                "created_at": 1,
+                "first_opened_at": 1,
+                "last_opened_at": 1,
+                "completed_at": 1,
+            }
+        ).sort("created_ts", 1)
+    )
 
 def update_participant_condition(participant_id: str):
     """Switch condition after Washout (AB -> BA or BA -> AB)"""

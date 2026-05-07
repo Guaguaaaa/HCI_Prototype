@@ -587,7 +587,11 @@
 
 
     // 确保从 Session Storage 中获取 participant_id
-    const participantId = sessionStorage.getItem('participant_id');
+    const participantId = sessionStorage.getItem('participant_id') || new URLSearchParams(window.location.search).get('pid');
+
+    if (participantId) {
+        sessionStorage.setItem('participant_id', participantId);
+    }
 
     // Expected total questions: 6 (Trust) + 6 (Empathy) + 1 (Attention) + 1 (Manipulation) + 4 (XAI) = 18
     // (MODIFIED) This is now dynamic based on condition
@@ -699,7 +703,7 @@
         errorMessage.style.display = 'none';
 
         // 1. 调用后端路由保存数据并获取下一个 URL
-        fetch('http://127.0.0.1:5000/save_data', {
+        fetch('/save_data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

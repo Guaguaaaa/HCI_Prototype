@@ -130,7 +130,7 @@
         errorMessage.style.display = 'none';
 
         // 1. 调用后端路由进行实验初始化
-        fetch('http://127.0.0.1:5000/start_experiment', {
+        fetch('/start_experiment', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             // MODIFIED: Sending 'condition_order'
