@@ -184,3 +184,6 @@ account.txt
 # python
 __pycache__/
 *.pyc
+
+# others
+links/
